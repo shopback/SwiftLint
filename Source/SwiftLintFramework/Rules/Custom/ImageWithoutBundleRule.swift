@@ -2,7 +2,7 @@ import SourceKittenFramework
 
 public struct ImageWithoutBundleRule: ASTRule, ConfigurationProviderRule, OptInRule {
 
-    public var configuration = ObjectLiteralConfiguration()
+    public var configuration = SeverityConfiguration(.error)
 
     public init() {
     }
@@ -13,13 +13,12 @@ public struct ImageWithoutBundleRule: ASTRule, ConfigurationProviderRule, OptInR
             description: "You have to specify a bundle when using an image asset.",
             kind: .idiomatic,
             nonTriggeringExamples: [
-                "let image = #imageLiteral(resourceName: \"image.jpg\")",
                 "let image = UIImage(named: \"foo\", in: ModuleConfiguration.shared.chatBundle, compatibleWith: <whatever>)"
             ],
             triggeringExamples: ["", ".init"].flatMap { (method: String) -> [String] in
                 [
                     "let image = ↓UIImage\(method)(named: \"foo\")",
-                    "let image = ↓UIImage\(method)(named: \"foo\", in: nil, compatibleWith: <whatever>)",
+                    "let image = ↓UIImage\(method)(named: \"foo\", in: nil, compatibleWith: <whatever>)"
                 ]
             }
     )
@@ -28,14 +27,14 @@ public struct ImageWithoutBundleRule: ASTRule, ConfigurationProviderRule, OptInR
                          dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
         guard kind == .call,
               let offset = dictionary.offset,
-              (configuration.imageLiteral && isImageNamedInit(dictionary: dictionary, file: file)),
+              isImageNamedInit(dictionary: dictionary, file: file),
               !hasNonNilBundle(dictionary: dictionary, file: file) else {
             return []
         }
 
         return [
             StyleViolation(ruleDescription: type(of: self).description,
-                    severity: configuration.severityConfiguration.severity,
+                    severity: configuration.severity,
                     location: Location(file: file, byteOffset: offset))
         ]
     }
@@ -44,10 +43,7 @@ public struct ImageWithoutBundleRule: ASTRule, ConfigurationProviderRule, OptInR
         guard let name = dictionary.name,
               inits(forClasses: ["UIImage", "NSImage"]).contains(name),
               case let arguments = dictionary.enclosedArguments,
-              arguments.compactMap({ $0.name }).contains("named"),
-              let argument = arguments.first,
-              case let kinds = kinds(forArgument: argument, file: file),
-              kinds == [.string] else {
+              arguments.compactMap({ $0.name }).contains("named") else {
             return false
         }
 

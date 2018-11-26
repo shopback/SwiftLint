@@ -76,6 +76,7 @@
 		47FF3BE11E7C75B600187E6D /* ImplicitlyUnwrappedOptionalRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47FF3BDF1E7C745100187E6D /* ImplicitlyUnwrappedOptionalRule.swift */; };
 		4A9A3A3A1DC1D75F00DF5183 /* HTMLReporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A9A3A391DC1D75F00DF5183 /* HTMLReporter.swift */; };
 		4D62018C77E26DB8A3BFCB00 /* ImageWithoutBundleRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D620D1ED9834DCFB97EA34D /* ImageWithoutBundleRule.swift */; };
+		4D62038F05288DD777840526 /* ImageLiteralsNoBundleRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D620102BA8D30BF87E857CA /* ImageLiteralsNoBundleRule.swift */; };
 		4D62047501DCCFBFF13C9EF2 /* SingletonInsideBodyRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D620A3F440118524C50EA51 /* SingletonInsideBodyRule.swift */; };
 		4DB7815E1CAD72BA00BC4723 /* LegacyCGGeometryFunctionsRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB7815C1CAD690100BC4723 /* LegacyCGGeometryFunctionsRule.swift */; };
 		4DCB8E7F1CBE494E0070FCF0 /* RegexHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DCB8E7D1CBE43640070FCF0 /* RegexHelpers.swift */; };
@@ -499,6 +500,7 @@
 		47ACC89B1E7DCFA00088EEB2 /* ImplicitlyUnwrappedOptionalRuleTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImplicitlyUnwrappedOptionalRuleTests.swift; sourceTree = "<group>"; };
 		47FF3BDF1E7C745100187E6D /* ImplicitlyUnwrappedOptionalRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImplicitlyUnwrappedOptionalRule.swift; sourceTree = "<group>"; };
 		4A9A3A391DC1D75F00DF5183 /* HTMLReporter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HTMLReporter.swift; sourceTree = "<group>"; };
+		4D620102BA8D30BF87E857CA /* ImageLiteralsNoBundleRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageLiteralsNoBundleRule.swift; sourceTree = "<group>"; };
 		4D620A3F440118524C50EA51 /* SingletonInsideBodyRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SingletonInsideBodyRule.swift; sourceTree = "<group>"; };
 		4D620D1ED9834DCFB97EA34D /* ImageWithoutBundleRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageWithoutBundleRule.swift; sourceTree = "<group>"; };
 		4DB7815C1CAD690100BC4723 /* LegacyCGGeometryFunctionsRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LegacyCGGeometryFunctionsRule.swift; sourceTree = "<group>"; };
@@ -927,6 +929,7 @@
 			children = (
 				4D620A3F440118524C50EA51 /* SingletonInsideBodyRule.swift */,
 				4D620D1ED9834DCFB97EA34D /* ImageWithoutBundleRule.swift */,
+				4D620102BA8D30BF87E857CA /* ImageLiteralsNoBundleRule.swift */,
 			);
 			path = Custom;
 			sourceTree = "<group>";
@@ -2039,6 +2042,7 @@
 				B3935EE74B1E8E14FBD65E7F /* String+XML.swift in Sources */,
 				4D62047501DCCFBFF13C9EF2 /* SingletonInsideBodyRule.swift in Sources */,
 				4D62018C77E26DB8A3BFCB00 /* ImageWithoutBundleRule.swift in Sources */,
+				4D62038F05288DD777840526 /* ImageLiteralsNoBundleRule.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

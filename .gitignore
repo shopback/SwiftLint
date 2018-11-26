@@ -61,3 +61,4 @@ Package.pins
 # Bundler
 .bundle/
 bundle/
+.idea

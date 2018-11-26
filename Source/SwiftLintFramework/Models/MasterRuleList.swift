@@ -57,6 +57,7 @@ public let masterRuleList = RuleList(rules: [
     GenericTypeNameRule.self,
     IdenticalOperandsRule.self,
     IdentifierNameRule.self,
+    ImageLiteralsNoBundleRule.self,
     ImageWithoutBundleRule.self,
     ImplicitGetterRule.self,
     ImplicitReturnRule.self,
