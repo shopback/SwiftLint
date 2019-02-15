@@ -1,3 +1,4 @@
+import Foundation
 import SourceKittenFramework
 
 public struct ImageLiteralsNoBundleRule: ASTRule, ConfigurationProviderRule, OptInRule {
