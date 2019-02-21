@@ -104,6 +104,7 @@ public let masterRuleList = RuleList(rules: [
     OperatorUsageWhitespaceRule.self,
     OverriddenSuperCallRule.self,
     OverrideInExtensionRule.self,
+    MethodWithClosure.self,
     PatternMatchingKeywordsRule.self,
     PrefixedTopLevelConstantRule.self,
     PrivateActionRule.self,
