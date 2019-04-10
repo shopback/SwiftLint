@@ -182,6 +182,7 @@
 		92CCB2D71E1EEFA300C8E5A3 /* UnusedOptionalBindingRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92CCB2D61E1EEFA300C8E5A3 /* UnusedOptionalBindingRule.swift */; };
 		93E0C3CE1D67BD7F007FA25D /* ConditionalReturnsOnNewlineRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93E0C3CD1D67BD7F007FA25D /* ConditionalReturnsOnNewlineRule.swift */; };
 		A1A6F3F21EE319ED00A9F9E2 /* ObjectLiteralConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A6F3F11EE319ED00A9F9E2 /* ObjectLiteralConfiguration.swift */; };
+		A22A62DC225C8A9B006C0A65 /* EmptyTryCatchRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22A62DB225C8A9B006C0A65 /* EmptyTryCatchRule.swift */; };
 		A3184D56215BCEFF00621EA2 /* LegacyRandomRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3184D55215BCEFF00621EA2 /* LegacyRandomRule.swift */; };
 		A73469421FB121BA009B57C7 /* CallPairRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A73469401FB12149009B57C7 /* CallPairRule.swift */; };
 		B25DCD0B1F7E9F9E0028A199 /* MultilineArgumentsRuleExamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = B25DCD091F7E9BB50028A199 /* MultilineArgumentsRuleExamples.swift */; };
@@ -636,6 +637,7 @@
 		92CCB2D61E1EEFA300C8E5A3 /* UnusedOptionalBindingRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UnusedOptionalBindingRule.swift; sourceTree = "<group>"; };
 		93E0C3CD1D67BD7F007FA25D /* ConditionalReturnsOnNewlineRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConditionalReturnsOnNewlineRule.swift; sourceTree = "<group>"; };
 		A1A6F3F11EE319ED00A9F9E2 /* ObjectLiteralConfiguration.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ObjectLiteralConfiguration.swift; sourceTree = "<group>"; };
+		A22A62DB225C8A9B006C0A65 /* EmptyTryCatchRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyTryCatchRule.swift; sourceTree = "<group>"; };
 		A3184D55215BCEFF00621EA2 /* LegacyRandomRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyRandomRule.swift; sourceTree = "<group>"; };
 		A73469401FB12149009B57C7 /* CallPairRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallPairRule.swift; sourceTree = "<group>"; };
 		B25DCD071F7E9B5F0028A199 /* MultilineArgumentsRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MultilineArgumentsRule.swift; sourceTree = "<group>"; };
@@ -995,6 +997,7 @@
 				4D620C2EDE7F3558671A717E /* SingletonInsideBodyRule.swift */,
 				4D6204DC0C3708CC81BD4E66 /* ImageLiteralsNoBundleRule.swift */,
 				4D6201A051D3207A800DBF81 /* MethodWithClosure.swift */,
+				A22A62DB225C8A9B006C0A65 /* EmptyTryCatchRule.swift */,
 			);
 			path = Custom;
 			sourceTree = "<group>";
@@ -2107,6 +2110,7 @@
 				D40F83881DE9179200524C62 /* TrailingCommaConfiguration.swift in Sources */,
 				827169B31F488181003FB9AF /* ExplicitEnumRawValueRule.swift in Sources */,
 				D41985E921FAB62F003BE2B7 /* DeploymentTargetRule.swift in Sources */,
+				A22A62DC225C8A9B006C0A65 /* EmptyTryCatchRule.swift in Sources */,
 				62FE5D32200CABDD00F68793 /* DiscouragedOptionalCollectionExamples.swift in Sources */,
 				D49896F12026B36C00814A83 /* RedundantSetAccessControlRule.swift in Sources */,
 				29FFC37A1F15764D007E4825 /* FileLengthRuleConfiguration.swift in Sources */,
