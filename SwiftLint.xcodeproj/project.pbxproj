@@ -35,6 +35,8 @@
 		1F11B3CF1C252F23002E8FA8 /* ClosingBraceRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F11B3CE1C252F23002E8FA8 /* ClosingBraceRule.swift */; };
 		24B4DF0D1D6DFDE90097803B /* RedundantNilCoalescingRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24B4DF0B1D6DFA370097803B /* RedundantNilCoalescingRule.swift */; };
 		24E17F721B14BB3F008195BE /* File+Cache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24E17F701B1481FF008195BE /* File+Cache.swift */; };
+		2882895F222975D00037CF5F /* NSObjectPreferIsEqualRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2882895B22287C9C0037CF5F /* NSObjectPreferIsEqualRule.swift */; };
+		288289602229776C0037CF5F /* NSObjectPreferIsEqualRuleExamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2882895D22287E2C0037CF5F /* NSObjectPreferIsEqualRuleExamples.swift */; };
 		29FC197921382C07006D208C /* DuplicateImportsRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29FC197721382C06006D208C /* DuplicateImportsRule.swift */; };
 		29FC197A21382C07006D208C /* DuplicateImportsRuleExamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29FC197821382C07006D208C /* DuplicateImportsRuleExamples.swift */; };
 		29FFC37A1F15764D007E4825 /* FileLengthRuleConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29FFC3781F1574FD007E4825 /* FileLengthRuleConfiguration.swift */; };
@@ -83,8 +85,10 @@
 		4D62006C41FA5B24E10F15A5 /* LastWhereRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D6204A5B44082FD4C710512 /* LastWhereRule.swift */; };
 		4D620259F459EB50A94DBDDE /* SortedFirstLastRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D6205B8AD8723B8D4739015 /* SortedFirstLastRule.swift */; };
 		4D6204C264AD895329C42C3A /* ImageLiteralsNoBundleRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D6204DC0C3708CC81BD4E66 /* ImageLiteralsNoBundleRule.swift */; };
+		4D6206C92F410457F2CE9C91 /* Baseline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D6201951C8428A458C9A1D8 /* Baseline.swift */; };
 		4D62086046E2DC9200C2BE02 /* ContainsOverFirstNotNilRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D6208A33AC2F9EC0BEF6F45 /* ContainsOverFirstNotNilRule.swift */; };
 		4D6208F19EA87CFAC913DA5A /* EmptyStringRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D620526F2519958EC871004 /* EmptyStringRule.swift */; };
+		4D620924462A3013C44AEFCA /* BaselineViolation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D62097E28B44E4C4C46BB97 /* BaselineViolation.swift */; };
 		4D620B77A1085349AEA2D9AD /* MethodWithClosure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D6201A051D3207A800DBF81 /* MethodWithClosure.swift */; };
 		4D620C787C3A07E9E9A0C648 /* SingletonInsideBodyRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D620C2EDE7F3558671A717E /* SingletonInsideBodyRule.swift */; };
 		4D620D79DBEC12778191086C /* FirstWhereRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D620A82A264B6B138D6B3C8 /* FirstWhereRule.swift */; };
@@ -183,6 +187,8 @@
 		93E0C3CE1D67BD7F007FA25D /* ConditionalReturnsOnNewlineRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93E0C3CD1D67BD7F007FA25D /* ConditionalReturnsOnNewlineRule.swift */; };
 		A1A6F3F21EE319ED00A9F9E2 /* ObjectLiteralConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A6F3F11EE319ED00A9F9E2 /* ObjectLiteralConfiguration.swift */; };
 		A22A62DC225C8A9B006C0A65 /* EmptyTryCatchRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22A62DB225C8A9B006C0A65 /* EmptyTryCatchRule.swift */; };
+		A274DB3121F8600300F1A581 /* BaselineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A274DB3021F8600300F1A581 /* BaselineTests.swift */; };
+		A2B37F92225F5B4C006EC969 /* ReduceBooleanRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B37F91225F5B4B006EC969 /* ReduceBooleanRule.swift */; };
 		A3184D56215BCEFF00621EA2 /* LegacyRandomRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3184D55215BCEFF00621EA2 /* LegacyRandomRule.swift */; };
 		A73469421FB121BA009B57C7 /* CallPairRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A73469401FB12149009B57C7 /* CallPairRule.swift */; };
 		B25DCD0B1F7E9F9E0028A199 /* MultilineArgumentsRuleExamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = B25DCD091F7E9BB50028A199 /* MultilineArgumentsRuleExamples.swift */; };
@@ -310,6 +316,7 @@
 		D4C889711E385B7B00BAE88D /* RedundantDiscardableLetRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4C889701E385B7B00BAE88D /* RedundantDiscardableLetRule.swift */; };
 		D4CA758F1E2DEEA500A40E8A /* NumberSeparatorRuleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4CA758E1E2DEEA500A40E8A /* NumberSeparatorRuleTests.swift */; };
 		D4CFC5D2209EC95A00668488 /* FunctionDefaultParameterAtEndRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4CFC5D1209EC95A00668488 /* FunctionDefaultParameterAtEndRule.swift */; };
+		D4D0B8F42211428D0053A116 /* ColonRuleExamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4D0B8F32211428D0053A116 /* ColonRuleExamples.swift */; };
 		D4D1B9BB1EAC2C910028BE6A /* AccessControlLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4D1B9B91EAC2C870028BE6A /* AccessControlLevel.swift */; };
 		D4D383852145F550000235BD /* StaticOperatorRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4D383842145F550000235BD /* StaticOperatorRule.swift */; };
 		D4D5A5FF1E1F3A1C00D15E0C /* ShorthandOperatorRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4D5A5FE1E1F3A1C00D15E0C /* ShorthandOperatorRule.swift */; };
@@ -491,6 +498,8 @@
 		1F11B3CE1C252F23002E8FA8 /* ClosingBraceRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ClosingBraceRule.swift; sourceTree = "<group>"; };
 		24B4DF0B1D6DFA370097803B /* RedundantNilCoalescingRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RedundantNilCoalescingRule.swift; sourceTree = "<group>"; };
 		24E17F701B1481FF008195BE /* File+Cache.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "File+Cache.swift"; sourceTree = "<group>"; };
+		2882895B22287C9C0037CF5F /* NSObjectPreferIsEqualRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSObjectPreferIsEqualRule.swift; sourceTree = "<group>"; };
+		2882895D22287E2C0037CF5F /* NSObjectPreferIsEqualRuleExamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSObjectPreferIsEqualRuleExamples.swift; sourceTree = "<group>"; };
 		29FC197721382C06006D208C /* DuplicateImportsRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DuplicateImportsRule.swift; sourceTree = "<group>"; };
 		29FC197821382C07006D208C /* DuplicateImportsRuleExamples.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DuplicateImportsRuleExamples.swift; sourceTree = "<group>"; };
 		29FFC3781F1574FD007E4825 /* FileLengthRuleConfiguration.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileLengthRuleConfiguration.swift; sourceTree = "<group>"; };
@@ -535,6 +544,7 @@
 		47ACC89B1E7DCFA00088EEB2 /* ImplicitlyUnwrappedOptionalRuleTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImplicitlyUnwrappedOptionalRuleTests.swift; sourceTree = "<group>"; };
 		47FF3BDF1E7C745100187E6D /* ImplicitlyUnwrappedOptionalRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImplicitlyUnwrappedOptionalRule.swift; sourceTree = "<group>"; };
 		4A9A3A391DC1D75F00DF5183 /* HTMLReporter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HTMLReporter.swift; sourceTree = "<group>"; };
+		4D6201951C8428A458C9A1D8 /* Baseline.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Baseline.swift; sourceTree = "<group>"; };
 		4D6201A051D3207A800DBF81 /* MethodWithClosure.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MethodWithClosure.swift; sourceTree = "<group>"; };
 		4D6204A5B44082FD4C710512 /* LastWhereRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LastWhereRule.swift; sourceTree = "<group>"; };
 		4D6204DC0C3708CC81BD4E66 /* ImageLiteralsNoBundleRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageLiteralsNoBundleRule.swift; sourceTree = "<group>"; };
@@ -543,6 +553,7 @@
 		4D6205B8AD8723B8D4739015 /* SortedFirstLastRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SortedFirstLastRule.swift; sourceTree = "<group>"; };
 		4D6208620D1015A9635C03AA /* ImageWithoutBundleRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageWithoutBundleRule.swift; sourceTree = "<group>"; };
 		4D6208A33AC2F9EC0BEF6F45 /* ContainsOverFirstNotNilRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContainsOverFirstNotNilRule.swift; sourceTree = "<group>"; };
+		4D62097E28B44E4C4C46BB97 /* BaselineViolation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BaselineViolation.swift; sourceTree = "<group>"; };
 		4D620A82A264B6B138D6B3C8 /* FirstWhereRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FirstWhereRule.swift; sourceTree = "<group>"; };
 		4D620C2EDE7F3558671A717E /* SingletonInsideBodyRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SingletonInsideBodyRule.swift; sourceTree = "<group>"; };
 		4DB7815C1CAD690100BC4723 /* LegacyCGGeometryFunctionsRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LegacyCGGeometryFunctionsRule.swift; sourceTree = "<group>"; };
@@ -638,6 +649,8 @@
 		93E0C3CD1D67BD7F007FA25D /* ConditionalReturnsOnNewlineRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConditionalReturnsOnNewlineRule.swift; sourceTree = "<group>"; };
 		A1A6F3F11EE319ED00A9F9E2 /* ObjectLiteralConfiguration.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ObjectLiteralConfiguration.swift; sourceTree = "<group>"; };
 		A22A62DB225C8A9B006C0A65 /* EmptyTryCatchRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyTryCatchRule.swift; sourceTree = "<group>"; };
+		A274DB3021F8600300F1A581 /* BaselineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaselineTests.swift; sourceTree = "<group>"; };
+		A2B37F91225F5B4B006EC969 /* ReduceBooleanRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReduceBooleanRule.swift; sourceTree = "<group>"; };
 		A3184D55215BCEFF00621EA2 /* LegacyRandomRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyRandomRule.swift; sourceTree = "<group>"; };
 		A73469401FB12149009B57C7 /* CallPairRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallPairRule.swift; sourceTree = "<group>"; };
 		B25DCD071F7E9B5F0028A199 /* MultilineArgumentsRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MultilineArgumentsRule.swift; sourceTree = "<group>"; };
@@ -784,6 +797,7 @@
 		D4C889701E385B7B00BAE88D /* RedundantDiscardableLetRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RedundantDiscardableLetRule.swift; sourceTree = "<group>"; };
 		D4CA758E1E2DEEA500A40E8A /* NumberSeparatorRuleTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NumberSeparatorRuleTests.swift; sourceTree = "<group>"; };
 		D4CFC5D1209EC95A00668488 /* FunctionDefaultParameterAtEndRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FunctionDefaultParameterAtEndRule.swift; sourceTree = "<group>"; };
+		D4D0B8F32211428D0053A116 /* ColonRuleExamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColonRuleExamples.swift; sourceTree = "<group>"; };
 		D4D1B9B91EAC2C870028BE6A /* AccessControlLevel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AccessControlLevel.swift; sourceTree = "<group>"; };
 		D4D383842145F550000235BD /* StaticOperatorRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaticOperatorRule.swift; sourceTree = "<group>"; };
 		D4D5A5FE1E1F3A1C00D15E0C /* ShorthandOperatorRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ShorthandOperatorRule.swift; sourceTree = "<group>"; };
@@ -1002,6 +1016,15 @@
 			path = Custom;
 			sourceTree = "<group>";
 		};
+		4D620840CFD78DE0E6ABFC65 /* Baseline */ = {
+			isa = PBXGroup;
+			children = (
+				4D6201951C8428A458C9A1D8 /* Baseline.swift */,
+				4D62097E28B44E4C4C46BB97 /* BaselineViolation.swift */,
+			);
+			path = Baseline;
+			sourceTree = "<group>";
+		};
 		4D620E8D36E84F2AEFB7428B /* Performance */ = {
 			isa = PBXGroup;
 			children = (
@@ -1010,6 +1033,7 @@
 				4D620526F2519958EC871004 /* EmptyStringRule.swift */,
 				4D620A82A264B6B138D6B3C8 /* FirstWhereRule.swift */,
 				4D6204A5B44082FD4C710512 /* LastWhereRule.swift */,
+				A2B37F91225F5B4B006EC969 /* ReduceBooleanRule.swift */,
 				4D6205B8AD8723B8D4739015 /* SortedFirstLastRule.swift */,
 			);
 			path = Performance;
@@ -1074,6 +1098,8 @@
 				D4DABFD61E2C23B1009617B6 /* NotificationCenterDetachmentRule.swift */,
 				D4DABFD81E2C59BC009617B6 /* NotificationCenterDetachmentRuleExamples.swift */,
 				D41985E621F85014003BE2B7 /* NSLocalizedStringKeyRule.swift */,
+				2882895B22287C9C0037CF5F /* NSObjectPreferIsEqualRule.swift */,
+				2882895D22287E2C0037CF5F /* NSObjectPreferIsEqualRuleExamples.swift */,
 				78F032441D7C877800BE709A /* OverriddenSuperCallRule.swift */,
 				D40FE89C1F867BFF006433E2 /* OverrideInExtensionRule.swift */,
 				62DEA1651FB21A9E00BCCCC6 /* PrivateActionRule.swift */,
@@ -1117,6 +1143,7 @@
 				1E82D5581D7775C7009553D7 /* ClosureSpacingRule.swift */,
 				756B585C2138ECD300D1A4E9 /* CollectionAlignmentRule.swift */,
 				E88DEA831B0990F500A66CB0 /* ColonRule.swift */,
+				D4D0B8F32211428D0053A116 /* ColonRuleExamples.swift */,
 				D47EF4811F69E34D0012C4CA /* ColonRule+Dictionary.swift */,
 				D47EF47F1F69E3100012C4CA /* ColonRule+FunctionCall.swift */,
 				D47EF4831F69E3D60012C4CA /* ColonRule+Type.swift */,
@@ -1362,6 +1389,7 @@
 				E86396C31BADAC0D002C9E88 /* Reporters */,
 				E88DEA7A1B098D7300A66CB0 /* Rules */,
 				D0D1216F19E87B05005E4BAA /* Supporting Files */,
+				4D620840CFD78DE0E6ABFC65 /* Baseline */,
 			);
 			name = SwiftLintFramework;
 			path = Source/SwiftLintFramework;
@@ -1387,6 +1415,7 @@
 			children = (
 				D4998DE61DF191380006E05D /* AttributesRuleTests.swift */,
 				D4EAB3A320E9948D0051C09A /* AutomaticRuleTests.generated.swift */,
+				A274DB3021F8600300F1A581 /* BaselineTests.swift */,
 				7578C915214173BE0080FEC9 /* CollectionAlignmentRuleTests.swift */,
 				D43B04651E071ED3004016AF /* ColonRuleTests.swift */,
 				E81ADD731ED6052F000CD451 /* CommandTests.swift */,
@@ -1776,7 +1805,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if which sourcery >/dev/null; then\n  make Source/SwiftLintFramework/Models/MasterRuleList.swift\nelse\n  echo \"Sourcery not found, install with 'brew install sourcery'\"\nfi";
+			shellScript = "if which sourcery >/dev/null; then\n  make Source/SwiftLintFramework/Models/MasterRuleList.swift\nelse\n  echo \"Sourcery not found, install with 'brew install sourcery'\"\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 		6CF24C421FC99616008CB0B1 /* Update Tests/LinuxMain.swift */ = {
@@ -1793,7 +1822,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if which sourcery >/dev/null; then\n  make Tests/LinuxMain.swift\nelse\n  echo \"Sourcery not found, install with 'brew install sourcery'\"\nfi";
+			shellScript = "if which sourcery >/dev/null; then\n  make Tests/LinuxMain.swift\nelse\n  echo \"Sourcery not found, install with 'brew install sourcery'\"\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 		C2265FAB1A4B86AC00158358 /* Check Xcode Version */ = {
@@ -1889,6 +1918,7 @@
 				E86623671F1D377900AAA3A2 /* Configuration+Parsing.swift in Sources */,
 				3BCC04CD1C4F5694006073C3 /* ConfigurationError.swift in Sources */,
 				D4C4A34E1DEA877200E0E04C /* FileHeaderRule.swift in Sources */,
+				A2B37F92225F5B4C006EC969 /* ReduceBooleanRule.swift in Sources */,
 				8F6B3154213CDCD100858E44 /* UnusedPrivateDeclarationRule.swift in Sources */,
 				1894D746207D585400BD94CF /* SwiftDeclarationAttributeKind+Swiftlint.swift in Sources */,
 				D4E92D1F2137B4C9002EDD48 /* IdenticalOperandsRule.swift in Sources */,
@@ -1898,6 +1928,7 @@
 				181D9E172038343D001F6887 /* UntypedErrorInCatchRule.swift in Sources */,
 				47FF3BE11E7C75B600187E6D /* ImplicitlyUnwrappedOptionalRule.swift in Sources */,
 				623E36F01F3DB1B1002E5B71 /* QuickDiscouragedCallRule.swift in Sources */,
+				288289602229776C0037CF5F /* NSObjectPreferIsEqualRuleExamples.swift in Sources */,
 				BFF028AE1CBCF8A500B38A9D /* TrailingWhitespaceConfiguration.swift in Sources */,
 				3B034B6E1E0BE549005D49A9 /* LineLengthConfiguration.swift in Sources */,
 				B25DCD0C1F7E9FA20028A199 /* MultilineArgumentsRule.swift in Sources */,
@@ -2038,12 +2069,14 @@
 				D48AE2CC1DFB58C5001C6A4A /* AttributesRuleExamples.swift in Sources */,
 				C28B2B3D2106DF730009A0FE /* PrefixedConstantRuleConfiguration.swift in Sources */,
 				62A7127520F1178F00E604A6 /* AnyObjectProtocolRule.swift in Sources */,
+				D4D0B8F42211428D0053A116 /* ColonRuleExamples.swift in Sources */,
 				E88DEA6F1B09843F00A66CB0 /* Location.swift in Sources */,
 				D43B046B1E075905004016AF /* ClosureEndIndentationRule.swift in Sources */,
 				D47EF4821F69E34D0012C4CA /* ColonRule+Dictionary.swift in Sources */,
 				D93DA3D11E699E6300809827 /* NestingConfiguration.swift in Sources */,
 				CC26ED07204DEB510013BBBC /* RuleIdentifier.swift in Sources */,
 				C328A2F71E6759AE00A9E4D7 /* ExplicitTypeInterfaceRule.swift in Sources */,
+				2882895F222975D00037CF5F /* NSObjectPreferIsEqualRule.swift in Sources */,
 				18B90B6B21ADD99800B60749 /* RedundantObjcAttributeRule.swift in Sources */,
 				93E0C3CE1D67BD7F007FA25D /* ConditionalReturnsOnNewlineRule.swift in Sources */,
 				D43DB1081DC573DA00281215 /* ImplicitGetterRule.swift in Sources */,
@@ -2159,6 +2192,8 @@
 				4D620D79DBEC12778191086C /* FirstWhereRule.swift in Sources */,
 				4D62006C41FA5B24E10F15A5 /* LastWhereRule.swift in Sources */,
 				4D620259F459EB50A94DBDDE /* SortedFirstLastRule.swift in Sources */,
+				4D6206C92F410457F2CE9C91 /* Baseline.swift in Sources */,
+				4D620924462A3013C44AEFCA /* BaselineViolation.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2225,6 +2260,7 @@
 				C25EBBDF2107884200E27603 /* PrefixedTopLevelConstantRuleTests.swift in Sources */,
 				C2B3C1612106F78C00088928 /* ConfigurationAliasesTests.swift in Sources */,
 				D4470D5B1EB76F44008A1B2E /* UnusedOptionalBindingRuleTests.swift in Sources */,
+				A274DB3121F8600300F1A581 /* BaselineTests.swift in Sources */,
 				787CDE3B208F9C34005F3D2F /* SwitchCaseAlignmentRuleTests.swift in Sources */,
 				F480DC811F2609AB00099465 /* XCTestCase+BundlePath.swift in Sources */,
 				B89F3BCE1FD5EE0200931E59 /* RequiredEnumCaseRuleTestCase.swift in Sources */,

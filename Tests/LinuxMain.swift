@@ -818,6 +818,12 @@ extension NSLocalizedStringKeyRuleTests {
     ]
 }
 
+extension NSObjectPreferIsEqualRuleTests {
+    static var allTests: [(String, (NSObjectPreferIsEqualRuleTests) -> () throws -> Void)] = [
+        ("testWithDefaultConfiguration", testWithDefaultConfiguration)
+    ]
+}
+
 extension NestingRuleTests {
     static var allTests: [(String, (NestingRuleTests) -> () throws -> Void)] = [
         ("testWithDefaultConfiguration", testWithDefaultConfiguration)
@@ -858,7 +864,8 @@ extension NumberSeparatorRuleTests {
     static var allTests: [(String, (NumberSeparatorRuleTests) -> () throws -> Void)] = [
         ("testNumberSeparatorWithDefaultConfiguration", testNumberSeparatorWithDefaultConfiguration),
         ("testNumberSeparatorWithMinimumLength", testNumberSeparatorWithMinimumLength),
-        ("testNumberSeparatorWithMinimumFractionLength", testNumberSeparatorWithMinimumFractionLength)
+        ("testNumberSeparatorWithMinimumFractionLength", testNumberSeparatorWithMinimumFractionLength),
+        ("testNumberSeparatorWithExcludeRanges", testNumberSeparatorWithExcludeRanges)
     ]
 }
 
@@ -973,6 +980,12 @@ extension QuickDiscouragedFocusedTestRuleTests {
 
 extension QuickDiscouragedPendingTestRuleTests {
     static var allTests: [(String, (QuickDiscouragedPendingTestRuleTests) -> () throws -> Void)] = [
+        ("testWithDefaultConfiguration", testWithDefaultConfiguration)
+    ]
+}
+
+extension ReduceBooleanRuleTests {
+    static var allTests: [(String, (ReduceBooleanRuleTests) -> () throws -> Void)] = [
         ("testWithDefaultConfiguration", testWithDefaultConfiguration)
     ]
 }
@@ -1560,6 +1573,7 @@ XCTMain([
     testCase(MultilineParametersRuleTests.allTests),
     testCase(MultipleClosuresWithTrailingClosureRuleTests.allTests),
     testCase(NSLocalizedStringKeyRuleTests.allTests),
+    testCase(NSObjectPreferIsEqualRuleTests.allTests),
     testCase(NestingRuleTests.allTests),
     testCase(NimbleOperatorRuleTests.allTests),
     testCase(NoExtensionAccessModifierRuleTests.allTests),
@@ -1585,6 +1599,7 @@ XCTMain([
     testCase(QuickDiscouragedCallRuleTests.allTests),
     testCase(QuickDiscouragedFocusedTestRuleTests.allTests),
     testCase(QuickDiscouragedPendingTestRuleTests.allTests),
+    testCase(ReduceBooleanRuleTests.allTests),
     testCase(RedundantDiscardableLetRuleTests.allTests),
     testCase(RedundantNilCoalescingRuleTests.allTests),
     testCase(RedundantObjcAttributeRuleTests.allTests),

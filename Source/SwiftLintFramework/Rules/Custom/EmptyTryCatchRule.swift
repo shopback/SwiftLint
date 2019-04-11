@@ -21,15 +21,14 @@ public struct EmptyTryCatchRule: OptInRule, ConfigurationProviderRule, Automatic
     public func validate(file: File) -> [StyleViolation] {
         return violationRanges(in: file).map {
             return StyleViolation(ruleDescription: type(of: self).description,
-                    severity: configuration.severity,
-                    location: Location(file: file, characterOffset: $0.location),
-                    reason: configuration.consoleDescription)
+                                  severity: configuration.severity,
+                                  location: Location(file: file, characterOffset: $0.location),
+                                  reason: configuration.consoleDescription)
         }
     }
 
     fileprivate func violationRanges(in file: File) -> [NSRange] {
         return file.match(pattern: type(of: self).regularExpression,
-                with: [.keyword])
+                          with: [.keyword])
     }
 }
-

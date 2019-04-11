@@ -2,26 +2,26 @@ import Foundation
 import SourceKittenFramework
 
 public struct ImageWithoutBundleRule: ASTRule, ConfigurationProviderRule, OptInRule {
-
     public var configuration = SeverityConfiguration(.error)
 
     public init() {
     }
 
     public static let description = RuleDescription(
-            identifier: "image_bundle",
-            name: "Image Without Bundle",
-            description: "You have to specify a bundle when using an image asset.",
-            kind: .idiomatic,
-            nonTriggeringExamples: [
-                "let image = UIImage(named: \"foo\", in: ModuleConfiguration.shared.chatBundle, compatibleWith: <whatever>)"
-            ],
-            triggeringExamples: ["", ".init"].flatMap { (method: String) -> [String] in
-                [
-                    "let image = ↓UIImage\(method)(named: \"foo\")",
-                    "let image = ↓UIImage\(method)(named: \"foo\", in: nil, compatibleWith: <whatever>)"
-                ]
-            }
+        identifier: "image_bundle",
+        name: "Image Without Bundle",
+        description: "You have to specify a bundle when using an image asset.",
+        kind: .idiomatic,
+        nonTriggeringExamples: [
+            "let image = UIImage(named: \"foo\",:"
+                + "in: ModuleConfiguration.shared.chatBundle, compatibleWith: <whatever>)"
+        ],
+        triggeringExamples: ["", ".init"].flatMap { (method: String) -> [String] in
+            [
+                "let image = ↓UIImage\(method)(named: \"foo\")",
+                "let image = ↓UIImage\(method)(named: \"foo\", in: nil, compatibleWith: <whatever>)"
+            ]
+        }
     )
 
     public func validate(file: File, kind: SwiftExpressionKind,
@@ -35,8 +35,8 @@ public struct ImageWithoutBundleRule: ASTRule, ConfigurationProviderRule, OptInR
 
         return [
             StyleViolation(ruleDescription: type(of: self).description,
-                    severity: configuration.severity,
-                    location: Location(file: file, byteOffset: offset))
+                           severity: configuration.severity,
+                           location: Location(file: file, byteOffset: offset))
         ]
     }
 
@@ -58,9 +58,9 @@ public struct ImageWithoutBundleRule: ASTRule, ConfigurationProviderRule, OptInR
             return false
         }
         guard arguments.compactMap({ $0.name }).contains("in"),
-              let argument = arguments.first(where: { $0.name == "in"}),
-              !isArgumentNil(argument, file: file) else {
-            return false
+            let argument = arguments.first(where: { $0.name == "in" }),
+            !isArgumentNil(argument, file: file) else {
+                return false
         }
 
         return true

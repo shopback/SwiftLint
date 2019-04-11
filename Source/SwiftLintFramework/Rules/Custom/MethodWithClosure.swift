@@ -2,7 +2,6 @@ import Foundation
 import SourceKittenFramework
 
 public struct MethodWithClosure: OptInRule, ASTRule, ConfigurationProviderRule {
-
     public var configuration = SeverityConfiguration(.warning)
 
     public init() {

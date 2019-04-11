@@ -384,6 +384,12 @@ class NSLocalizedStringKeyRuleTests: XCTestCase {
     }
 }
 
+class NSObjectPreferIsEqualRuleTests: XCTestCase {
+    func testWithDefaultConfiguration() {
+        verifyRule(NSObjectPreferIsEqualRule.description)
+    }
+}
+
 class NestingRuleTests: XCTestCase {
     func testWithDefaultConfiguration() {
         verifyRule(NestingRule.description)
@@ -501,6 +507,12 @@ class QuickDiscouragedFocusedTestRuleTests: XCTestCase {
 class QuickDiscouragedPendingTestRuleTests: XCTestCase {
     func testWithDefaultConfiguration() {
         verifyRule(QuickDiscouragedPendingTestRule.description)
+    }
+}
+
+class ReduceBooleanRuleTests: XCTestCase {
+    func testWithDefaultConfiguration() {
+        verifyRule(ReduceBooleanRule.description)
     }
 }
 

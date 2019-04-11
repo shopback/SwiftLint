@@ -34,6 +34,7 @@
 * [Empty Parameters](#empty-parameters)
 * [Empty Parentheses with Trailing Closure](#empty-parentheses-with-trailing-closure)
 * [Empty String](#empty-string)
+* [Empty Try Catch](#empty-try-catch)
 * [Empty XCTest Method](#empty-xctest-method)
 * [Explicit ACL](#explicit-acl)
 * [Explicit Enum Raw Value](#explicit-enum-raw-value)
@@ -58,6 +59,8 @@
 * [Generic Type Name](#generic-type-name)
 * [Identical Operands](#identical-operands)
 * [Identifier Name](#identifier-name)
+* [Image Without Bundle](#image-without-bundle)
+* [Image Literals Have No Bundle](#image-literals-have-no-bundle)
 * [Implicit Getter](#implicit-getter)
 * [Implicit Return](#implicit-return)
 * [Implicitly Unwrapped Optional](#implicitly-unwrapped-optional)
@@ -78,6 +81,7 @@
 * [Literal Expression End Indentation](#literal-expression-end-indentation)
 * [Lower ACL than parent](#lower-acl-than-parent)
 * [Mark](#mark)
+* [Method With Closure](#method-with-closure)
 * [Missing Docs](#missing-docs)
 * [Modifier Order](#modifier-order)
 * [Multiline Arguments](#multiline-arguments)
@@ -94,6 +98,7 @@
 * [No Grouping Extension](#no-grouping-extension)
 * [Notification Center Detachment](#notification-center-detachment)
 * [NSLocalizedString Key](#nslocalizedstring-key)
+* [NSObject Prefer isEqual](#nsobject-prefer-isequal)
 * [Number Separator](#number-separator)
 * [Object Literal](#object-literal)
 * [Opening Brace Spacing](#opening-brace-spacing)
@@ -113,6 +118,7 @@
 * [Quick Discouraged Call](#quick-discouraged-call)
 * [Quick Discouraged Focused Test](#quick-discouraged-focused-test)
 * [Quick Discouraged Pending Test](#quick-discouraged-pending-test)
+* [Reduce Boolean](#reduce-boolean)
 * [Redundant Discardable Let](#redundant-discardable-let)
 * [Redundant Nil Coalescing](#redundant-nil-coalescing)
 * [Redundant @objc Attribute](#redundant-@objc-attribute)
@@ -126,6 +132,7 @@
 * [Returning Whitespace](#returning-whitespace)
 * [Shorthand Operator](#shorthand-operator)
 * [Single Test Class](#single-test-class)
+* [Singleton Inside Method Body](#singleton-inside-method-body)
 * [Min or Max over Sorted First or Last](#min-or-max-over-sorted-first-or-last)
 * [Sorted Imports](#sorted-imports)
 * [Statement Position](#statement-position)
@@ -1987,6 +1994,21 @@ class Foo: Bar {}
 ```
 
 ```swift
+class Foo<T>: Bar {}
+
+```
+
+```swift
+class Foo<T: Equatable>: Bar {}
+
+```
+
+```swift
+class Foo<T, U>: Bar {}
+
+```
+
+```swift
 class Foo<T: Equatable> {}
 
 ```
@@ -2226,6 +2248,26 @@ class ↓Foo : Bar {}
 
 ```swift
 class ↓Foo:Bar {}
+
+```
+
+```swift
+class ↓Foo<T> : Bar {}
+
+```
+
+```swift
+class ↓Foo<T>:Bar {}
+
+```
+
+```swift
+class ↓Foo<T, U>:Bar {}
+
+```
+
+```swift
+class ↓Foo<T: Equatable>:Bar {}
 
 ```
 
@@ -5424,6 +5466,16 @@ myString↓ != ""
 
 
 
+## Empty Try Catch
+
+Identifier | Enabled by default | Supports autocorrection | Kind | Analyzer | Minimum Swift Compiler Version
+--- | --- | --- | --- | --- | ---
+`empty_try_catch` | Disabled | No | idiomatic | No | 4.2.0 
+
+Catch closure in a try-catch statement should at least log an error.
+
+
+
 ## Empty XCTest Method
 
 Identifier | Enabled by default | Supports autocorrection | Kind | Analyzer | Minimum Swift Compiler Version
@@ -7591,6 +7643,14 @@ match(pattern: pattern).filter { $0.first == .identifier }
 collection.filter("stringCol = '3'").first
 ```
 
+```swift
+realm?.objects(User.self).filter(NSPredicate(format: "email ==[c] %@", email)).first
+```
+
+```swift
+if let pause = timeTracker.pauses.filter("beginDate < %@", beginDate).first { print(pause) }
+```
+
 </details>
 <details>
 <summary>Triggering Examples</summary>
@@ -9048,6 +9108,80 @@ private ↓let _i = 0
 
 ```swift
 enum Foo { case ↓MyEnum }
+```
+
+</details>
+
+
+
+## Image Without Bundle
+
+Identifier | Enabled by default | Supports autocorrection | Kind | Analyzer | Minimum Swift Compiler Version
+--- | --- | --- | --- | --- | ---
+`image_bundle` | Disabled | No | idiomatic | No | 3.0.0 
+
+You have to specify a bundle when using an image asset.
+
+### Examples
+
+<details>
+<summary>Non Triggering Examples</summary>
+
+```swift
+let image = UIImage(named: "foo",:in: ModuleConfiguration.shared.chatBundle, compatibleWith: <whatever>)
+```
+
+</details>
+<details>
+<summary>Triggering Examples</summary>
+
+```swift
+let image = ↓UIImage(named: "foo")
+```
+
+```swift
+let image = ↓UIImage(named: "foo", in: nil, compatibleWith: <whatever>)
+```
+
+```swift
+let image = ↓UIImage.init(named: "foo")
+```
+
+```swift
+let image = ↓UIImage.init(named: "foo", in: nil, compatibleWith: <whatever>)
+```
+
+</details>
+
+
+
+## Image Literals Have No Bundle
+
+Identifier | Enabled by default | Supports autocorrection | Kind | Analyzer | Minimum Swift Compiler Version
+--- | --- | --- | --- | --- | ---
+`image_literal_no_bundle` | Disabled | No | idiomatic | No | 3.0.0 
+
+Image literals are forbidden due to lack of bundle specification.You have to specify a bundle when using an image asset.
+
+### Examples
+
+<details>
+<summary>Non Triggering Examples</summary>
+
+```swift
+let image = UIImage(named: "foo", in: ModuleConfiguration.shared.chatBundle,compatibleWith: <whatever>)
+```
+
+</details>
+<details>
+<summary>Triggering Examples</summary>
+
+```swift
+let image = ↓#imageLiteral(resourceName: "image.jpg")
+```
+
+```swift
+let image = ↓#imageLiteral(resourceName: "image.jpg")
 ```
 
 </details>
@@ -11192,6 +11326,16 @@ extension MarkTest {}
 
 
 
+## Method With Closure
+
+Identifier | Enabled by default | Supports autocorrection | Kind | Analyzer | Minimum Swift Compiler Version
+--- | --- | --- | --- | --- | ---
+`method_with_closure` | Disabled | No | idiomatic | No | 4.2.0 
+
+If a method declaration contains non-optional closure it has to be used.
+
+
+
 ## Missing Docs
 
 Identifier | Enabled by default | Supports autocorrection | Kind | Analyzer | Minimum Swift Compiler Version
@@ -13143,6 +13287,12 @@ extension Oranges {}
 
 ```
 
+```swift
+class Box<T> {}
+extension Box where T: Vegetable {}
+
+```
+
 </details>
 <details>
 <summary>Triggering Examples</summary>
@@ -13254,6 +13404,131 @@ NSLocalizedString(↓method(), comment: nil)
 
 ```swift
 NSLocalizedString(↓"key_\(param)", comment: nil)
+```
+
+</details>
+
+
+
+## NSObject Prefer isEqual
+
+Identifier | Enabled by default | Supports autocorrection | Kind | Analyzer | Minimum Swift Compiler Version
+--- | --- | --- | --- | --- | ---
+`nsobject_prefer_isequal` | Enabled | No | lint | No | 3.0.0 
+
+NSObject subclasses should implement isEqual instead of ==.
+
+### Examples
+
+<details>
+<summary>Non Triggering Examples</summary>
+
+```swift
+class AClass: NSObject {
+}
+```
+
+```swift
+@objc class AClass: SomeNSObjectSubclass {
+}
+```
+
+```swift
+class AClass: Equatable {
+    static func ==(lhs: AClass, rhs: AClass) -> Bool {
+        return true
+    }
+```
+
+```swift
+class AClass: NSObject {
+    override func isEqual(_ object: Any?) -> Bool {
+        return true
+    }
+}
+```
+
+```swift
+@objc class AClass: SomeNSObjectSubclass {
+    override func isEqual(_ object: Any?) -> Bool {
+        return false
+    }
+}
+```
+
+```swift
+class AClass: NSObject {
+    func ==(lhs: AClass, rhs: AClass) -> Bool {
+        return true
+    }
+}
+```
+
+```swift
+class AClass: NSObject {
+    static func ==(lhs: AClass, rhs: BClass) -> Bool {
+        return true
+    }
+}
+```
+
+```swift
+struct AStruct: Equatable {
+    static func ==(lhs: AStruct, rhs: AStruct) -> Bool {
+        return false
+    }
+}
+```
+
+```swift
+enum AnEnum: Equatable {
+    static func ==(lhs: AnEnum, rhs: AnEnum) -> Bool {
+        return true
+    }
+}
+```
+
+</details>
+<details>
+<summary>Triggering Examples</summary>
+
+```swift
+class AClass: NSObject {
+    ↓static func ==(lhs: AClass, rhs: AClass) -> Bool {
+        return false
+    }
+}
+```
+
+```swift
+@objc class AClass: SomeOtherNSObjectSubclass {
+    ↓static func ==(lhs: AClass, rhs: AClass) -> Bool {
+        return true
+    }
+}
+```
+
+```swift
+class AClass: NSObject, Equatable {
+    ↓static func ==(lhs: AClass, rhs: AClass) -> Bool {
+        return false
+    }
+}
+```
+
+```swift
+class AClass: NSObject {
+    override func isEqual(_ object: Any?) -> Bool {
+        guard let other = object as? AClass else {
+            return false
+        }
+        return true
+    }
+
+    ↓static func ==(lhs: AClass, rhs: AClass) -> Bool {
+        return false
+    }
+}
 ```
 
 </details>
@@ -15608,6 +15883,67 @@ class TotoTests: QuickSpec {
 
 
 
+## Reduce Boolean
+
+Identifier | Enabled by default | Supports autocorrection | Kind | Analyzer | Minimum Swift Compiler Version
+--- | --- | --- | --- | --- | ---
+`reduce_boolean` | Enabled | No | performance | No | 4.2.0 
+
+Prefer using `.allSatisfy()` or `.contains()` over `reduce(true)` or `reduce(false)`
+
+### Examples
+
+<details>
+<summary>Non Triggering Examples</summary>
+
+```swift
+nums.reduce(0) { $0.0 + $0.1 }
+```
+
+```swift
+nums.reduce(0.0) { $0.0 + $0.1 }
+```
+
+</details>
+<details>
+<summary>Triggering Examples</summary>
+
+```swift
+let allNines = nums.↓reduce(true) { $0.0 && $0.1 == 9 }
+```
+
+```swift
+let anyNines = nums.↓reduce(false) { $0.0 || $0.1 == 9 }
+```
+
+```swift
+let allValid = validators.↓reduce(true) { $0 && $1(input) }
+```
+
+```swift
+let anyValid = validators.↓reduce(false) { $0 || $1(input) }
+```
+
+```swift
+let allNines = nums.↓reduce(true, { $0.0 && $0.1 == 9 })
+```
+
+```swift
+let anyNines = nums.↓reduce(false, { $0.0 || $0.1 == 9 })
+```
+
+```swift
+let allValid = validators.↓reduce(true, { $0 && $1(input) })
+```
+
+```swift
+let anyValid = validators.↓reduce(false, { $0 || $1(input) })
+```
+
+</details>
+
+
+
 ## Redundant Discardable Let
 
 Identifier | Enabled by default | Supports autocorrection | Kind | Analyzer | Minimum Swift Compiler Version
@@ -16938,6 +17274,16 @@ class TotoTests {  }
 ```
 
 </details>
+
+
+
+## Singleton Inside Method Body
+
+Identifier | Enabled by default | Supports autocorrection | Kind | Analyzer | Minimum Swift Compiler Version
+--- | --- | --- | --- | --- | ---
+`singleton_inside_body` | Disabled | No | idiomatic | No | 4.2.0 
+
+Singletons should not be called directly by using .sharedinside method body but should be injected first.
 
 
 
@@ -22101,6 +22447,12 @@ withPostSideEffect { input in
 }
 ```
 
+```swift
+viewModel?.profileImage.didSet(weak: self) { (self, profileImage) in
+    self.profileImageView.image = profileImage
+}
+```
+
 </details>
 <details>
 <summary>Triggering Examples</summary>
@@ -22163,6 +22515,12 @@ func foo () {
  return 3
 }
 
+```
+
+```swift
+viewModel?.profileImage.didSet(weak: self) { (↓self, profileImage) in
+    profileImageView.image = profileImage
+}
 ```
 
 </details>
