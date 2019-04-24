@@ -10,7 +10,7 @@ public struct MethodWithClosure: OptInRule, ASTRule, ConfigurationProviderRule {
     public static let description = RuleDescription(
             identifier: "method_with_closure",
             name: "Method With Closure",
-            description: "If a method declaration contains non-optional closure it has to be used.",
+            description: "If a method declaration contains non-optional closure it has to be executed at least once inside methods body",
             kind: .idiomatic,
             minSwiftVersion: .fourDotTwo
     )
