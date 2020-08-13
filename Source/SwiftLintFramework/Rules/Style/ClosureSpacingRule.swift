@@ -27,33 +27,33 @@ public struct ClosureSpacingRule: CorrectableRule, ConfigurationProviderRule, Op
         description: "Closure expressions should have a single space inside each brace.",
         kind: .style,
         nonTriggeringExamples: [
-            "[].map ({ $0.description })",
-            "[].filter { $0.contains(location) }",
-            "extension UITableViewCell: ReusableView { }",
-            "extension UITableViewCell: ReusableView {}"
+            Example("[].map ({ $0.description })"),
+            Example("[].filter { $0.contains(location) }"),
+            Example("extension UITableViewCell: ReusableView { }"),
+            Example("extension UITableViewCell: ReusableView {}")
         ],
         triggeringExamples: [
-            "[].filter(↓{$0.contains(location)})",
-            "[].map(↓{$0})",
-            "(↓{each in return result.contains(where: ↓{e in return e}) }).count",
-            "filter ↓{ sorted ↓{ $0 < $1}}"
+            Example("[].filter(↓{$0.contains(location)})"),
+            Example("[].map(↓{$0})"),
+            Example("(↓{each in return result.contains(where: ↓{e in return e}) }).count"),
+            Example("filter ↓{ sorted ↓{ $0 < $1}}")
         ],
         corrections: [
-            "[].filter(↓{$0.contains(location)})":
-            "[].filter({ $0.contains(location) })",
-            "[].map(↓{$0})":
-            "[].map({ $0 })",
+            Example("[].filter(↓{$0.contains(location)})"):
+                Example("[].filter({ $0.contains(location) })"),
+            Example("[].map(↓{$0})"):
+                Example("[].map({ $0 })"),
             // Nested braces `{ {} }` do not get corrected on the first pass.
-            "filter ↓{sorted { $0 < $1}}":
-            "filter { sorted { $0 < $1} }",
+            Example("filter ↓{sorted { $0 < $1}}"):
+                Example("filter { sorted { $0 < $1} }"),
             // The user has to run tool again to fix remaining nested violations.
-            "filter { sorted ↓{ $0 < $1} }":
-            "filter { sorted { $0 < $1 } }",
-            "(↓{each in return result.contains(where: {e in return 0})}).count":
-            "({ each in return result.contains(where: {e in return 0}) }).count",
+            Example("filter { sorted ↓{ $0 < $1} }"):
+                Example("filter { sorted { $0 < $1 } }"),
+            Example("(↓{each in return result.contains(where: {e in return 0})}).count"):
+                Example("({ each in return result.contains(where: {e in return 0}) }).count"),
             // second pass example
-            "({ each in return result.contains(where: ↓{e in return 0}) }).count":
-            "({ each in return result.contains(where: { e in return 0 }) }).count"
+            Example("({ each in return result.contains(where: ↓{e in return 0}) }).count"):
+                Example("({ each in return result.contains(where: { e in return 0 }) }).count")
         ]
     )
 
@@ -69,11 +69,11 @@ public struct ClosureSpacingRule: CorrectableRule, ConfigurationProviderRule, Op
     }
 
     // returns ranges of braces `{` or `}` in the same line
-    private func validBraces(in file: File) -> [NSRange] {
+    private func validBraces(in file: SwiftLintFile) -> [NSRange] {
         let nsstring = file.contents.bridge()
         let bracePattern = regex("\\{|\\}")
         let linesTokens = file.syntaxTokensByLines
-        let kindsToExclude = SyntaxKind.commentAndStringKinds.map { $0.rawValue }
+        let kindsToExclude = SyntaxKind.commentAndStringKinds
 
         // find all lines and occurences of open { and closed } braces
         var linesWithBraces = [[NSRange]]()
@@ -85,9 +85,12 @@ public struct ClosureSpacingRule: CorrectableRule, ConfigurationProviderRule, Op
             let braces = bracePattern.matches(in: file.contents, options: [],
                                               range: nsrange).map { $0.range }
             // filter out braces in comments and strings
-            let tokens = linesTokens[eachLine.index].filter { kindsToExclude.contains($0.type) }
+            let tokens = linesTokens[eachLine.index].filter {
+                guard let tokenKind = $0.kind else { return false }
+                return kindsToExclude.contains(tokenKind)
+            }
             let tokenRanges = tokens.compactMap {
-                file.contents.bridge().byteRangeToNSRange(start: $0.offset, length: $0.length)
+                file.stringView.byteRangeToNSRange($0.range)
             }
             linesWithBraces.append(braces.filter({ !$0.intersects(tokenRanges) }))
         }
@@ -95,7 +98,7 @@ public struct ClosureSpacingRule: CorrectableRule, ConfigurationProviderRule, Op
     }
 
     // find ranges where violation exist. Returns ranges sorted by location.
-    private func findViolations(file: File) -> [NSRange] {
+    private func findViolations(file: SwiftLintFile) -> [NSRange] {
         // match open braces to corresponding closing braces
         func matchBraces(validBraceLocations: [NSRange]) -> [NSRange] {
             if validBraceLocations.isEmpty { return [] }
@@ -133,9 +136,9 @@ public struct ClosureSpacingRule: CorrectableRule, ConfigurationProviderRule, Op
             }
     }
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         return findViolations(file: file).compactMap {
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, characterOffset: $0.location))
         }
@@ -148,7 +151,7 @@ public struct ClosureSpacingRule: CorrectableRule, ConfigurationProviderRule, Op
         }
     }
 
-    public func correct(file: File) -> [Correction] {
+    public func correct(file: SwiftLintFile) -> [Correction] {
         var matches = removeNested(findViolations(file: file)).filter {
             !file.ruleEnabled(violatingRanges: [$0], for: self).isEmpty
         }
@@ -196,7 +199,7 @@ public struct ClosureSpacingRule: CorrectableRule, ConfigurationProviderRule, Op
         file.write(fixedSections.joined())
 
         return matches.map {
-            Correction(ruleDescription: type(of: self).description,
+            Correction(ruleDescription: Self.description,
                        location: Location(file: file, characterOffset: $0.location))
         }
     }

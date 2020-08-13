@@ -1,6 +1,9 @@
 import SourceKittenFramework
 
+/// Reports violations in SonarQube import format.
 public struct SonarQubeReporter: Reporter {
+    // MARK: - Reporter Conformance
+
     public static let identifier = "sonarqube"
     public static let isRealtime = false
 
@@ -12,11 +15,13 @@ public struct SonarQubeReporter: Reporter {
         return toJSON(["issues": violations.map(dictionary(for:))])
     }
 
+    // MARK: - Private
+
     // refer to https://docs.sonarqube.org/display/SONAR/Generic+Issue+Data
     private static func dictionary(for violation: StyleViolation) -> [String: Any] {
         return [
             "engineId": "SwiftLint",
-            "ruleId": violation.ruleDescription.identifier,
+            "ruleId": violation.ruleIdentifier,
             "primaryLocation": [
                 "message": violation.reason,
                 "filePath": violation.location.relativeFile ?? "",

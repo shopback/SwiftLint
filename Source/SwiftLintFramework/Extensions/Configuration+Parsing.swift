@@ -13,6 +13,7 @@ extension Configuration {
         case whitelistRules = "whitelist_rules"
         case indentation = "indentation"
         case analyzerRules = "analyzer_rules"
+        case allowZeroLintableFiles  = "allow_zero_lintable_files"
     }
 
     private static let validGlobalKeys: Set<String> = {
@@ -29,7 +30,8 @@ extension Configuration {
             .warningThreshold,
             .whitelistRules,
             .indentation,
-            .analyzerRules
+            .analyzerRules,
+            .allowZeroLintableFiles
         ].map({ $0.rawValue }))
     }()
 
@@ -52,6 +54,15 @@ extension Configuration {
         return .default
     }
 
+    /// Creates a Configuration value based on the specified parameters.
+    ///
+    /// - parameter dict:                   The untyped dictionary to serve as the input for this typed configuration.
+    ///                                     Typically generated from a YAML-formatted file.
+    /// - parameter ruleList:               The list of rules to be available to this configuration.
+    /// - parameter enableAllRules:         Whether all rules from `ruleList` should be enabled, regardless of the
+    ///                                     settings in `dict`.
+    /// - parameter cachePath:              The location of the persisted cache on disk.
+    /// - parameter customRulesIdentifiers: All custom rule identifiers defined in the configuration.
     public init?(dict: [String: Any], ruleList: RuleList = masterRuleList, enableAllRules: Bool = false,
                  cachePath: String? = nil, customRulesIdentifiers: [String] = []) {
         // Use either new 'opt_in_rules' or deprecated 'enabled_rules' for now.
@@ -65,6 +76,7 @@ extension Configuration {
         let included = defaultStringArray(dict[Key.included.rawValue])
         let excluded = defaultStringArray(dict[Key.excluded.rawValue])
         let indentation = Configuration.getIndentationLogIfInvalid(from: dict)
+        let allowZeroLintableFiles = dict[Key.allowZeroLintableFiles.rawValue] as? Bool ?? false
 
         Configuration.warnAboutDeprecations(configurationDictionary: dict, disabledRules: disabledRules,
                                             optInRules: optInRules, whitelistRules: whitelistRules, ruleList: ruleList)
@@ -97,6 +109,7 @@ extension Configuration {
                   cachePath: cachePath ?? dict[Key.cachePath.rawValue] as? String,
                   indentation: indentation,
                   customRulesIdentifiers: customRulesIdentifiers,
+                  allowZeroLintableFiles: allowZeroLintableFiles,
                   dict: dict)
     }
 
@@ -115,6 +128,7 @@ extension Configuration {
                   cachePath: String?,
                   indentation: IndentationStyle,
                   customRulesIdentifiers: [String],
+                  allowZeroLintableFiles: Bool,
                   dict: [String: Any]) {
         let rulesMode: RulesMode
         if enableAllRules {
@@ -144,7 +158,8 @@ extension Configuration {
                   swiftlintVersion: swiftlintVersion,
                   cachePath: cachePath,
                   indentation: indentation,
-                  customRulesIdentifiers: customRulesIdentifiers)
+                  customRulesIdentifiers: customRulesIdentifiers,
+                  allowZeroLintableFiles: allowZeroLintableFiles)
     }
 
     private static func warnAboutDeprecations(configurationDictionary dict: [String: Any],

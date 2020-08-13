@@ -1,3 +1,4 @@
+import Foundation
 import SourceKittenFramework
 
 public struct EmptyStringRule: ConfigurationProviderRule, OptInRule, AutomaticTestableRule {
@@ -11,21 +12,28 @@ public struct EmptyStringRule: ConfigurationProviderRule, OptInRule, AutomaticTe
         description: "Prefer checking `isEmpty` over comparing `string` to an empty string literal.",
         kind: .performance,
         nonTriggeringExamples: [
-            "myString.isEmpty",
-            "!myString.isEmpy"
+            Example("myString.isEmpty"),
+            Example("!myString.isEmpty"),
+            Example("\"\"\"\nfoo==\n\"\"\"")
         ],
         triggeringExamples: [
-            "myString↓ == \"\"",
-            "myString↓ != \"\""
+            Example("myString↓ == \"\""),
+            Example("myString↓ != \"\"")
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         let pattern = "\\b\\s*(==|!=)\\s*\"\""
-        return file.match(pattern: pattern, with: [.string]).map {
-            StyleViolation(ruleDescription: type(of: self).description,
-                           severity: configuration.severity,
-                           location: Location(file: file, characterOffset: $0.location))
+        return file.match(pattern: pattern, with: [.string]).compactMap { range in
+            guard let byteRange = file.stringView.NSRangeToByteRange(NSRange(location: range.location, length: 1)),
+                case let kinds = file.syntaxMap.kinds(inByteRange: byteRange),
+                kinds.isEmpty else {
+                    return nil
+            }
+
+            return StyleViolation(ruleDescription: Self.description,
+                                  severity: configuration.severity,
+                                  location: Location(file: file, characterOffset: range.location))
         }
     }
 }

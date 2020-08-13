@@ -12,27 +12,68 @@ public struct CyclomaticComplexityRule: ASTRule, ConfigurationProviderRule {
         description: "Complexity of function bodies should be limited.",
         kind: .metrics,
         nonTriggeringExamples: [
-            "func f1() {\nif true {\nfor _ in 1..5 { } }\nif false { }\n}",
-            "func f(code: Int) -> Int {" +
-                "switch code {\n case 0: fallthrough\ncase 0: return 1\ncase 0: return 1\n" +
-                "case 0: return 1\ncase 0: return 1\ncase 0: return 1\ncase 0: return 1\n" +
-                "case 0: return 1\ncase 0: return 1\ndefault: return 1}}",
-            "func f1() {" +
-            "if true {}; if true {}; if true {}; if true {}; if true {}; if true {}\n" +
-                "func f2() {\n" +
-                    "if true {}; if true {}; if true {}; if true {}; if true {}\n" +
-                "}}"
+            Example("""
+            func f1() {
+                if true {
+                    for _ in 1..5 { }
+                }
+                if false { }
+            }
+            """),
+            Example("""
+            func f(code: Int) -> Int {
+                switch code {
+                case 0: fallthrough
+                case 0: return 1
+                case 0: return 1
+                case 0: return 1
+                case 0: return 1
+                case 0: return 1
+                case 0: return 1
+                case 0: return 1
+                case 0: return 1
+                default: return 1
+                }
+            }
+            """),
+            Example("""
+            func f1() {
+                if true {}; if true {}; if true {}; if true {}; if true {}; if true {}
+                func f2() {
+                    if true {}; if true {}; if true {}; if true {}; if true {}
+                }
+            }
+            """)
         ],
         triggeringExamples: [
-            "↓func f1() {\n  if true {\n    if true {\n      if false {}\n    }\n" +
-                "  }\n  if false {}\n  let i = 0\n\n  switch i {\n  case 1: break\n" +
-                "  case 2: break\n  case 3: break\n  case 4: break\n default: break\n  }\n" +
-                "  for _ in 1...5 {\n    guard true else {\n      return\n    }\n  }\n}\n"
+            Example("""
+            ↓func f1() {
+                if true {
+                    if true {
+                        if false {}
+                    }
+                }
+                if false {}
+                let i = 0
+                switch i {
+                    case 1: break
+                    case 2: break
+                    case 3: break
+                    case 4: break
+                    default: break
+                }
+                for _ in 1...5 {
+                    guard true else {
+                        return
+                    }
+                }
+            }
+            """)
         ]
     )
 
-    public func validate(file: File, kind: SwiftDeclarationKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftDeclarationKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard SwiftDeclarationKind.functionKinds.contains(kind) else {
             return []
         }
@@ -43,7 +84,7 @@ public struct CyclomaticComplexityRule: ASTRule, ConfigurationProviderRule {
             let offset = dictionary.offset ?? 0
             let reason = "Function should have complexity \(configuration.length.warning) or less: " +
                          "currently complexity equals \(complexity)"
-            return [StyleViolation(ruleDescription: type(of: self).description,
+            return [StyleViolation(ruleDescription: Self.description,
                                    severity: parameter.severity,
                                    location: Location(file: file, byteOffset: offset),
                                    reason: reason)]
@@ -52,20 +93,20 @@ public struct CyclomaticComplexityRule: ASTRule, ConfigurationProviderRule {
         return []
     }
 
-    private func measureComplexity(in file: File, dictionary: [String: SourceKitRepresentable]) -> Int {
+    private func measureComplexity(in file: SwiftLintFile, dictionary: SourceKittenDictionary) -> Int {
         var hasSwitchStatements = false
 
         let complexity = dictionary.substructure.reduce(0) { complexity, subDict in
-            guard let kind = subDict.kind else {
+            guard subDict.kind != nil else {
                 return complexity
             }
 
-            if let declarationKind = SwiftDeclarationKind(rawValue: kind),
+            if let declarationKind = subDict.declarationKind,
                 SwiftDeclarationKind.functionKinds.contains(declarationKind) {
                 return complexity
             }
 
-            guard let statementKind = StatementKind(rawValue: kind) else {
+            guard let statementKind = subDict.statementKind else {
                 return complexity + measureComplexity(in: file, dictionary: subDict)
             }
 
@@ -87,12 +128,11 @@ public struct CyclomaticComplexityRule: ASTRule, ConfigurationProviderRule {
 
     // Switch complexity is reduced by `fallthrough` cases
 
-    private func reduceSwitchComplexity(initialComplexity complexity: Int, file: File,
-                                        dictionary: [String: SourceKitRepresentable]) -> Int {
-        let bodyOffset = dictionary.bodyOffset ?? 0
-        let bodyLength = dictionary.bodyLength ?? 0
+    private func reduceSwitchComplexity(initialComplexity complexity: Int, file: SwiftLintFile,
+                                        dictionary: SourceKittenDictionary) -> Int {
+        let bodyRange = dictionary.bodyByteRange ?? ByteRange(location: 0, length: 0)
 
-        let contents = file.contents.bridge().substringWithByteRange(start: bodyOffset, length: bodyLength) ?? ""
+        let contents = file.stringView.substringWithByteRange(bodyRange) ?? ""
 
         let fallthroughCount = contents.components(separatedBy: "fallthrough").count - 1
         return complexity - fallthroughCount

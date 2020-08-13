@@ -22,11 +22,11 @@ public struct CyclomaticComplexityConfiguration: RuleConfiguration, Equatable {
         .case
     ]
 
-    private(set) public var length: SeverityLevelsConfiguration
+    public private(set) var length: SeverityLevelsConfiguration
 
-    private(set) public var complexityStatements: Set<StatementKind>
+    public private(set) var complexityStatements: Set<StatementKind>
 
-    private(set) public var ignoresCaseStatements: Bool {
+    public private(set) var ignoresCaseStatements: Bool {
         didSet {
             if ignoresCaseStatements {
                 complexityStatements.remove(.case)
@@ -42,7 +42,7 @@ public struct CyclomaticComplexityConfiguration: RuleConfiguration, Equatable {
 
     public init(warning: Int, error: Int?, ignoresCaseStatements: Bool = false) {
         self.length = SeverityLevelsConfiguration(warning: warning, error: error)
-        self.complexityStatements = type(of: self).defaultComplexityStatements
+        self.complexityStatements = Self.defaultComplexityStatements
         self.ignoresCaseStatements = ignoresCaseStatements
     }
 

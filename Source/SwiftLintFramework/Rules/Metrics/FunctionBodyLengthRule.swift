@@ -12,13 +12,13 @@ public struct FunctionBodyLengthRule: ASTRule, ConfigurationProviderRule {
         kind: .metrics
     )
 
-    public func validate(file: File, kind: SwiftDeclarationKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftDeclarationKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard SwiftDeclarationKind.functionKinds.contains(kind),
             let offset = dictionary.offset,
             let bodyOffset = dictionary.bodyOffset,
             let bodyLength = dictionary.bodyLength,
-            case let contentsNSString = file.contents.bridge(),
+            case let contentsNSString = file.stringView,
             let startLine = contentsNSString.lineAndCharacter(forByteOffset: bodyOffset)?.line,
             let endLine = contentsNSString.lineAndCharacter(forByteOffset: bodyOffset + bodyLength)?.line
         else {
@@ -29,7 +29,7 @@ public struct FunctionBodyLengthRule: ASTRule, ConfigurationProviderRule {
                 startLine, endLine, parameter.value
             )
             guard exceeds else { continue }
-            return [StyleViolation(ruleDescription: type(of: self).description,
+            return [StyleViolation(ruleDescription: Self.description,
                                    severity: parameter.severity,
                                    location: Location(file: file, byteOffset: offset),
                                    reason: "Function body should span \(configuration.warning) lines or less " +

@@ -78,7 +78,7 @@ class LinterCacheTests: XCTestCase {
         cache.cache(violations: violations, forFile: forFile, configuration: configuration)
         cache = cache.flushed()
         XCTAssertEqual(cache.violations(forFile: forFile, configuration: configuration)!,
-                       violations, file: file, line: line)
+                       violations, file: (file), line: line)
     }
 
     private func cacheAndValidateNoViolationsTwoFiles(configuration: Configuration,
@@ -97,31 +97,11 @@ class LinterCacheTests: XCTestCase {
         let newConfig = Configuration(dict: dict)!
         let (file1, file2) = ("file1.swift", "file2.swift")
 
-        XCTAssertNil(cache.violations(forFile: file1, configuration: newConfig), file: file, line: line)
-        XCTAssertNil(cache.violations(forFile: file2, configuration: newConfig), file: file, line: line)
+        XCTAssertNil(cache.violations(forFile: file1, configuration: newConfig), file: (file), line: line)
+        XCTAssertNil(cache.violations(forFile: file2, configuration: newConfig), file: (file), line: line)
 
-        XCTAssertEqual(cache.violations(forFile: file1, configuration: initialConfig)!, [], file: file, line: line)
-        XCTAssertEqual(cache.violations(forFile: file2, configuration: initialConfig)!, [], file: file, line: line)
-    }
-
-    // MARK: Cache Initialization
-
-    func testInitThrowsWhenUsingInvalidCacheFormat() {
-        let cache = [["version": "0.1.0"]]
-        checkError(LinterCacheError.invalidFormat) {
-            _ = try LinterCache(cache: cache)
-        }
-    }
-
-    func testSaveThrowsWithNoLocation() throws {
-        let cache = try LinterCache(cache: [:])
-        checkError(LinterCacheError.noLocation) {
-            try cache.save()
-        }
-    }
-
-    func testInitSucceeds() {
-        XCTAssertNotNil(try? LinterCache(cache: [:]))
+        XCTAssertEqual(cache.violations(forFile: file1, configuration: initialConfig)!, [], file: (file), line: line)
+        XCTAssertEqual(cache.violations(forFile: file2, configuration: initialConfig)!, [], file: (file), line: line)
     }
 
     // MARK: Cache Reuse
@@ -317,58 +297,5 @@ class LinterCacheTests: XCTestCase {
 
         XCTAssertNotNil(thisSwiftVersionCache.violations(forFile: file, configuration: helper.configuration))
         XCTAssertNil(cache.violations(forFile: file, configuration: helper.configuration))
-    }
-
-    func testDetectSwiftVersion() {
-        #if swift(>=4.2.0)
-            let version = "4.2.0"
-        #elseif swift(>=4.1.50)
-            let version = "4.2.0" // Since we can't pass SWIFT_VERSION=4 to sourcekit, it returns 4.2.0
-        #elseif swift(>=4.1.2)
-            let version = "4.1.2"
-        #elseif swift(>=4.1.1)
-            let version = "4.1.1"
-        #elseif swift(>=4.1.0)
-            let version = "4.1.0"
-        #elseif swift(>=4.0.3)
-            let version = "4.0.3"
-        #elseif swift(>=4.0.2)
-            let version = "4.0.2"
-        #elseif swift(>=4.0.1)
-            let version = "4.0.1"
-        #elseif swift(>=4.0.0)
-            let version = "4.0.0"
-        #elseif swift(>=3.4.0)
-            let version = "4.2.0" // Since we can't pass SWIFT_VERSION=3 to sourcekit, it returns 4.2.0
-        #elseif swift(>=3.3.2)
-            let version = "4.1.2" // Since we can't pass SWIFT_VERSION=3 to sourcekit, it returns 4.1.2
-        #elseif swift(>=3.3.1)
-            let version = "4.1.1" // Since we can't pass SWIFT_VERSION=3 to sourcekit, it returns 4.1.1
-        #elseif swift(>=3.3.0)
-            let version = "4.1.0" // Since we can't pass SWIFT_VERSION=3 to sourcekit, it returns 4.1.0
-        #elseif swift(>=3.2.3)
-            let version = "4.0.3" // Since we can't pass SWIFT_VERSION=3 to sourcekit, it returns 4.0.3
-        #elseif swift(>=3.2.2)
-            let version = "4.0.2" // Since we can't pass SWIFT_VERSION=3 to sourcekit, it returns 4.0.2
-        #elseif swift(>=3.2.1)
-            let version = "4.0.1" // Since we can't pass SWIFT_VERSION=3 to sourcekit, it returns 4.0.1
-        #else // if swift(>=3.2.0)
-            let version = "4.0.0" // Since we can't pass SWIFT_VERSION=3 to sourcekit, it returns 4.0.0
-        #endif
-        XCTAssertEqual(SwiftVersion.current.rawValue, version)
-    }
-
-    // MARK: JSON output
-
-    func testCacheToJSONDoesntCrash() {
-        // swiftlint:disable line_length
-        let key1 = "[\"/SwiftLint/source\",[[\"block_based_kvo\",\"warning\"],[\"class_delegate_protocol\",\"warning\"],[\"closing_brace\",\"warning\"],[\"closure_parameter_position\",\"warning\"],[\"colon\",\"warning, flexible_right_spacing: false, apply_to_dictionaries: true\"],[\"comma\",\"warning\"],[\"compiler_protocol_init\",\"warning\"],[\"control_statement\",\"warning\"],[\"custom_rules\",\"\"],[\"cyclomatic_complexity\",\"warning: 10, error: 20, ignores_case_statements: false\"],[\"discarded_notification_center_observer\",\"warning\"],[\"discouraged_direct_init\",\"warning, types: [\"Bundle\", \"Bundle.init\", \"UIDevice\", \"UIDevice.init\"]\"],[\"dynamic_inline\",\"error\"],[\"empty_enum_arguments\",\"warning\"],[\"empty_parameters\",\"warning\"]]]"
-
-        let key2 = "[\"/SwiftLint/Source\",[[\"block_based_kvo\",\"warning\"],[\"class_delegate_protocol\",\"warning\"],[\"closing_brace\",\"warning\"],[\"closure_parameter_position\",\"warning\"],[\"colon\",\"warning, flexible_right_spacing: false, apply_to_dictionaries: true\"],[\"comma\",\"warning\"],[\"compiler_protocol_init\",\"warning\"],[\"control_statement\",\"warning\"],[\"custom_rules\",\"\"],[\"cyclomatic_complexity\",\"warning: 10, error: 20, ignores_case_statements: false\"],[\"discarded_notification_center_observer\",\"warning\"],[\"discouraged_direct_init\",\"warning, types: [\"Bundle\", \"Bundle.init\", \"UIDevice\", \"UIDevice.init\"]\"],[\"dynamic_inline\",\"error\"],[\"empty_enum_arguments\",\"warning\"],[\"empty_parameters\",\"warning\"]]]"
-        // swiftlint:enable line_length
-
-        let dict = [key1: "test", key2: "test2"]
-
-        XCTAssertNoThrow(try dict.toJSON())
     }
 }

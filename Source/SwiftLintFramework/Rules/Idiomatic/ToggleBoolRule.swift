@@ -1,6 +1,7 @@
+import Foundation
 import SourceKittenFramework
 
-public struct ToggleBoolRule: ConfigurationProviderRule, OptInRule, AutomaticTestableRule {
+public struct ToggleBoolRule: SubstitutionCorrectableRule, ConfigurationProviderRule, OptInRule, AutomaticTestableRule {
     public var configuration = SeverityConfiguration(.warning)
 
     public init() {}
@@ -12,26 +13,42 @@ public struct ToggleBoolRule: ConfigurationProviderRule, OptInRule, AutomaticTes
         kind: .idiomatic,
         minSwiftVersion: .fourDotTwo,
         nonTriggeringExamples: [
-            "isHidden.toggle()\n",
-            "view.clipsToBounds.toggle()\n",
-            "func foo() { abc.toggle() }",
-            "view.clipsToBounds = !clipsToBounds\n",
-            "disconnected = !connected\n"
+            Example("isHidden.toggle()\n"),
+            Example("view.clipsToBounds.toggle()\n"),
+            Example("func foo() { abc.toggle() }"),
+            Example("view.clipsToBounds = !clipsToBounds\n"),
+            Example("disconnected = !connected\n")
         ],
         triggeringExamples: [
-            "↓isHidden = !isHidden\n",
-            "↓view.clipsToBounds = !view.clipsToBounds\n",
-            "func foo() { ↓abc = !abc }"
+            Example("↓isHidden = !isHidden\n"),
+            Example("↓view.clipsToBounds = !view.clipsToBounds\n"),
+            Example("func foo() { ↓abc = !abc }")
+        ],
+        corrections: [
+            Example("↓isHidden = !isHidden\n"): Example("isHidden.toggle()\n"),
+            Example("↓view.clipsToBounds = !view.clipsToBounds\n"): Example("view.clipsToBounds.toggle()\n"),
+            Example("func foo() { ↓abc = !abc }"): Example("func foo() { abc.toggle() }")
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
+        return violationRanges(in: file).map {
+            StyleViolation(ruleDescription: ToggleBoolRule.description,
+                           severity: configuration.severity,
+                           location: Location(file: file, characterOffset: $0.location)
+            )
+        }
+    }
+
+    public func violationRanges(in file: SwiftLintFile) -> [NSRange] {
         let pattern = "(?<![\\w.])([\\w.]+) = !\\1\\b"
         let excludingKinds = SyntaxKind.commentAndStringKinds
-        return file.match(pattern: pattern, excludingSyntaxKinds: excludingKinds).map {
-            StyleViolation(ruleDescription: type(of: self).description,
-                           severity: configuration.severity,
-                           location: Location(file: file, characterOffset: $0.location))
-        }
+        return file.match(pattern: pattern, excludingSyntaxKinds: excludingKinds)
+    }
+
+    public func substitution(for violationRange: NSRange, in file: SwiftLintFile) -> (NSRange, String)? {
+        let violationString = file.stringView.substring(with: violationRange)
+        let identifier = violationString.components(separatedBy: .whitespaces).first { !$0.isEmpty }
+        return (violationRange, identifier! + ".toggle()")
     }
 }

@@ -13,65 +13,76 @@ public struct RedundantVoidReturnRule: ConfigurationProviderRule, SubstitutionCo
         description: "Returning Void in a function declaration is redundant.",
         kind: .idiomatic,
         nonTriggeringExamples: [
-            "func foo() {}\n",
-            "func foo() -> Int {}\n",
-            "func foo() -> Int -> Void {}\n",
-            "func foo() -> VoidResponse\n",
-            "let foo: Int -> Void\n",
-            "func foo() -> Int -> () {}\n",
-            "let foo: Int -> ()\n",
-            "func foo() -> ()?\n",
-            "func foo() -> ()!\n",
-            "func foo() -> Void?\n",
-            "func foo() -> Void!\n"
+            Example("func foo() {}\n"),
+            Example("func foo() -> Int {}\n"),
+            Example("func foo() -> Int -> Void {}\n"),
+            Example("func foo() -> VoidResponse\n"),
+            Example("let foo: (Int) -> Void\n"),
+            Example("func foo() -> Int -> () {}\n"),
+            Example("let foo: (Int) -> ()\n"),
+            Example("func foo() -> ()?\n"),
+            Example("func foo() -> ()!\n"),
+            Example("func foo() -> Void?\n"),
+            Example("func foo() -> Void!\n"),
+            Example("""
+            struct A {
+                subscript(key: String) {
+                    print(key)
+                }
+            }
+            """)
         ],
         triggeringExamples: [
-            "func foo()↓ -> Void {}\n",
-            """
+            Example("func foo()↓ -> Void {}\n"),
+            Example("""
             protocol Foo {
               func foo()↓ -> Void
             }
-            """,
-            "func foo()↓ -> () {}\n",
-            """
+            """),
+            Example("func foo()↓ -> () {}\n"),
+            Example("func foo()↓ -> ( ) {}"),
+            Example("""
             protocol Foo {
               func foo()↓ -> ()
             }
-            """
+            """)
         ],
         corrections: [
-            "func foo()↓ -> Void {}\n": "func foo() {}\n",
-            "protocol Foo {\n func foo()↓ -> Void\n}\n": "protocol Foo {\n func foo()\n}\n",
-            "func foo()↓ -> () {}\n": "func foo() {}\n",
-            "protocol Foo {\n func foo()↓ -> ()\n}\n": "protocol Foo {\n func foo()\n}\n",
-            "protocol Foo {\n    #if true\n    func foo()↓ -> Void\n    #endif\n}\n":
-            "protocol Foo {\n    #if true\n    func foo()\n    #endif\n}\n"
+            Example("func foo()↓ -> Void {}\n"): Example("func foo() {}\n"),
+            Example("protocol Foo {\n func foo()↓ -> Void\n}\n"): Example("protocol Foo {\n func foo()\n}\n"),
+            Example("func foo()↓ -> () {}\n"): Example("func foo() {}\n"),
+            Example("protocol Foo {\n func foo()↓ -> ()\n}\n"): Example("protocol Foo {\n func foo()\n}\n"),
+            Example("protocol Foo {\n    #if true\n    func foo()↓ -> Void\n    #endif\n}\n"):
+                Example("protocol Foo {\n    #if true\n    func foo()\n    #endif\n}\n")
         ]
     )
 
     private let pattern = "\\s*->\\s*(?:Void\\b|\\(\\s*\\))(?![?!])"
     private let excludingKinds = SyntaxKind.allKinds.subtracting([.typeidentifier])
+    private let functionKinds = SwiftDeclarationKind.functionKinds.subtracting([.functionSubscript])
 
-    public func validate(file: File, kind: SwiftDeclarationKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftDeclarationKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         return violationRanges(in: file, kind: kind, dictionary: dictionary).map {
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, characterOffset: $0.location))
         }
     }
 
-    public func violationRanges(in file: File, kind: SwiftDeclarationKind,
-                                dictionary: [String: SourceKitRepresentable]) -> [NSRange] {
-        guard SwiftDeclarationKind.functionKinds.contains(kind),
+    public func violationRanges(in file: SwiftLintFile, kind: SwiftDeclarationKind,
+                                dictionary: SourceKittenDictionary) -> [NSRange] {
+        guard functionKinds.contains(kind),
+            !shouldReturnEarlyBasedOnTypeName(dictionary: dictionary),
             let nameOffset = dictionary.nameOffset,
             let nameLength = dictionary.nameLength,
             let length = dictionary.length,
             let offset = dictionary.offset,
             case let start = nameOffset + nameLength,
             case let end = dictionary.bodyOffset ?? offset + length,
-            case let contents = file.contents.bridge(),
-            let range = contents.byteRangeToNSRange(start: start, length: end - start),
+            case let contents = file.stringView,
+            case let byteRange = ByteRange(location: start, length: end - start),
+            let range = contents.byteRangeToNSRange(byteRange),
             file.match(pattern: "->", excludingSyntaxKinds: excludingKinds, range: range).count == 1,
             let match = file.match(pattern: pattern, excludingSyntaxKinds: excludingKinds, range: range).first else {
                 return []
@@ -80,7 +91,23 @@ public struct RedundantVoidReturnRule: ConfigurationProviderRule, SubstitutionCo
         return [match]
     }
 
-    public func substitution(for violationRange: NSRange, in file: File) -> (NSRange, String) {
+    public func substitution(for violationRange: NSRange, in file: SwiftLintFile) -> (NSRange, String)? {
         return (violationRange, "")
+    }
+
+    private func shouldReturnEarlyBasedOnTypeName(dictionary: SourceKittenDictionary) -> Bool {
+        guard SwiftVersion.current >= .fourDotOne else {
+            return false
+        }
+
+        return !containsVoidReturnTypeBasedOnTypeName(dictionary: dictionary)
+    }
+
+    private func containsVoidReturnTypeBasedOnTypeName(dictionary: SourceKittenDictionary) -> Bool {
+        guard let typeName = dictionary.typeName else {
+            return false
+        }
+
+        return typeName == "Void" || typeName.components(separatedBy: .whitespaces).joined() == "()"
     }
 }

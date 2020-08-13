@@ -11,20 +11,20 @@ public struct PrivateOutletRule: ASTRule, OptInRule, ConfigurationProviderRule {
         description: "IBOutlets should be private to avoid leaking UIKit to higher layers.",
         kind: .lint,
         nonTriggeringExamples: [
-            "class Foo {\n  @IBOutlet private var label: UILabel?\n}\n",
-            "class Foo {\n  @IBOutlet private var label: UILabel!\n}\n",
-            "class Foo {\n  var notAnOutlet: UILabel\n}\n",
-            "class Foo {\n  @IBOutlet weak private var label: UILabel?\n}\n",
-            "class Foo {\n  @IBOutlet private weak var label: UILabel?\n}\n"
+            Example("class Foo {\n  @IBOutlet private var label: UILabel?\n}\n"),
+            Example("class Foo {\n  @IBOutlet private var label: UILabel!\n}\n"),
+            Example("class Foo {\n  var notAnOutlet: UILabel\n}\n"),
+            Example("class Foo {\n  @IBOutlet weak private var label: UILabel?\n}\n"),
+            Example("class Foo {\n  @IBOutlet private weak var label: UILabel?\n}\n")
         ],
         triggeringExamples: [
-            "class Foo {\n  @IBOutlet ↓var label: UILabel?\n}\n",
-            "class Foo {\n  @IBOutlet ↓var label: UILabel!\n}\n"
+            Example("class Foo {\n  @IBOutlet ↓var label: UILabel?\n}\n"),
+            Example("class Foo {\n  @IBOutlet ↓var label: UILabel!\n}\n")
         ]
     )
 
-    public func validate(file: File, kind: SwiftDeclarationKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftDeclarationKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard kind == .varInstance else {
             return []
         }
@@ -34,7 +34,7 @@ public struct PrivateOutletRule: ASTRule, OptInRule, ConfigurationProviderRule {
         guard isOutlet else { return [] }
 
         // Check if private
-        let isPrivate = isPrivateLevel(identifier: dictionary.accessibility)
+        let isPrivate = dictionary.accessibility?.isPrivate ?? false
         let isPrivateSet = isPrivateLevel(identifier: dictionary.setterAccessibility)
 
         if isPrivate || (configuration.allowPrivateSet && isPrivateSet) {
@@ -50,7 +50,7 @@ public struct PrivateOutletRule: ASTRule, OptInRule, ConfigurationProviderRule {
         }
 
         return [
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severityConfiguration.severity,
                            location: location)
         ]

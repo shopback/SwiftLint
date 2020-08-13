@@ -13,32 +13,32 @@ public struct ProtocolPropertyAccessorsOrderRule: ConfigurationProviderRule, Sub
         description: "When declaring properties in protocols, the order of accessors should be `get set`.",
         kind: .style,
         nonTriggeringExamples: [
-            "protocol Foo {\n var bar: String { get set }\n }",
-            "protocol Foo {\n var bar: String { get }\n }",
-            "protocol Foo {\n var bar: String { set }\n }"
+            Example("protocol Foo {\n var bar: String { get set }\n }"),
+            Example("protocol Foo {\n var bar: String { get }\n }"),
+            Example("protocol Foo {\n var bar: String { set }\n }")
         ],
         triggeringExamples: [
-            "protocol Foo {\n var bar: String { ↓set get }\n }"
+            Example("protocol Foo {\n var bar: String { ↓set get }\n }")
         ],
         corrections: [
-            "protocol Foo {\n var bar: String { ↓set get }\n }":
-                "protocol Foo {\n var bar: String { get set }\n }"
+            Example("protocol Foo {\n var bar: String { ↓set get }\n }"):
+                Example("protocol Foo {\n var bar: String { get set }\n }")
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         return violationRanges(in: file).map {
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, characterOffset: $0.location))
         }
     }
 
-    public func violationRanges(in file: File) -> [NSRange] {
+    public func violationRanges(in file: SwiftLintFile) -> [NSRange] {
         return file.match(pattern: "\\bset\\s*get\\b", with: [.keyword, .keyword])
     }
 
-    public func substitution(for violationRange: NSRange, in file: File) -> (NSRange, String) {
+    public func substitution(for violationRange: NSRange, in file: SwiftLintFile) -> (NSRange, String)? {
         return (violationRange, "get set")
     }
 }

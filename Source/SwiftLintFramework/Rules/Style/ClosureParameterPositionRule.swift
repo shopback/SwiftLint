@@ -12,51 +12,116 @@ public struct ClosureParameterPositionRule: ASTRule, ConfigurationProviderRule, 
         description: "Closure parameters should be on the same line as opening brace.",
         kind: .style,
         nonTriggeringExamples: [
-            "[1, 2].map { $0 + 1 }\n",
-            "[1, 2].map({ $0 + 1 })\n",
-            "[1, 2].map { number in\n number + 1 \n}\n",
-            "[1, 2].map { number -> Int in\n number + 1 \n}\n",
-            "[1, 2].map { (number: Int) -> Int in\n number + 1 \n}\n",
-            "[1, 2].map { [weak self] number in\n number + 1 \n}\n",
-            "[1, 2].something(closure: { number in\n number + 1 \n})\n",
-            "let isEmpty = [1, 2].isEmpty()\n",
-            "rlmConfiguration.migrationBlock.map { rlmMigration in\n" +
-                "return { migration, schemaVersion in\n" +
-                    "rlmMigration(migration.rlmMigration, schemaVersion)\n" +
-                "}\n" +
-            "}",
-            "let mediaView: UIView = { [weak self] index in\n" +
-            "   return UIView()\n" +
-            "}(index)\n"
+            Example("[1, 2].map { $0 + 1 }\n"),
+            Example("[1, 2].map({ $0 + 1 })\n"),
+            Example("[1, 2].map { number in\n number + 1 \n}\n"),
+            Example("[1, 2].map { number -> Int in\n number + 1 \n}\n"),
+            Example("[1, 2].map { (number: Int) -> Int in\n number + 1 \n}\n"),
+            Example("[1, 2].map { [weak self] number in\n number + 1 \n}\n"),
+            Example("[1, 2].something(closure: { number in\n number + 1 \n})\n"),
+            Example("let isEmpty = [1, 2].isEmpty()\n"),
+            Example("""
+            rlmConfiguration.migrationBlock.map { rlmMigration in
+                return { migration, schemaVersion in
+                    rlmMigration(migration.rlmMigration, schemaVersion)
+                }
+            }
+            """),
+            Example("""
+            let mediaView: UIView = { [weak self] index in
+               return UIView()
+            }(index)
+            """)
         ],
         triggeringExamples: [
-            "[1, 2].map {\n ↓number in\n number + 1 \n}\n",
-            "[1, 2].map {\n ↓number -> Int in\n number + 1 \n}\n",
-            "[1, 2].map {\n (↓number: Int) -> Int in\n number + 1 \n}\n",
-            "[1, 2].map {\n [weak self] ↓number in\n number + 1 \n}\n",
-            "[1, 2].map { [weak self]\n ↓number in\n number + 1 \n}\n",
-            "[1, 2].map({\n ↓number in\n number + 1 \n})\n",
-            "[1, 2].something(closure: {\n ↓number in\n number + 1 \n})\n",
-            "[1, 2].reduce(0) {\n ↓sum, ↓number in\n number + sum \n}\n"
+            Example("""
+            [1, 2].map {
+                ↓number in
+                number + 1
+            }
+            """),
+            Example("""
+            [1, 2].map {
+                ↓number -> Int in
+                number + 1
+            }
+            """),
+            Example("""
+            [1, 2].map {
+                (↓number: Int) -> Int in
+                number + 1
+            }
+            """),
+            Example("""
+            [1, 2].map {
+                [weak ↓self] ↓number in
+                number + 1
+            }
+            """),
+            Example("""
+            [1, 2].map { [weak self]
+                ↓number in
+                number + 1
+            }
+            """),
+            Example("""
+            [1, 2].map({
+                ↓number in
+                number + 1
+            })
+            """),
+            Example("""
+            [1, 2].something(closure: {
+                ↓number in
+                number + 1
+            })
+            """),
+            Example("""
+            [1, 2].reduce(0) {
+                ↓sum, ↓number in
+                number + sum
+            })
+            """),
+            Example("""
+            f.completionHandler = {
+                ↓thing in
+                doStuff()
+            }
+            """),
+            Example("""
+            foo {
+                [weak ↓self] in
+                self?.bar()
+            }
+            """)
         ]
     )
 
     private static let openBraceRegex = regex("\\{")
 
-    public func validate(file: File, kind: SwiftExpressionKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
-        guard kind == .call else {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
+        return file.structureDictionary.traverseDepthFirst { subDict in
+            guard let kind = self.kind(from: subDict) else { return nil }
+            return validate(file: file, kind: kind, dictionary: subDict)
+        }.unique.sorted(by: { $0.location < $1.location })
+    }
+
+    public func validate(file: SwiftLintFile, kind: SwiftExpressionKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
+        guard kind == .closure || kind == .call else {
             return []
         }
 
         guard let nameOffset = dictionary.nameOffset,
             let nameLength = dictionary.nameLength,
             let bodyLength = dictionary.bodyLength,
-            bodyLength > 0 else {
-                return []
+            bodyLength > 0
+        else {
+            return []
         }
 
-        let parameters = dictionary.enclosedVarParameters
+        let parameters = dictionary.enclosedVarParameters +
+            dictionary.substructure.filter { $0.declarationKind == .varLocal } // capture lists
         let rangeStart = nameOffset + nameLength
         let regex = ClosureParameterPositionRule.openBraceRegex
 
@@ -68,19 +133,21 @@ public struct ClosureParameterPositionRule: ASTRule, ConfigurationProviderRule, 
             }
 
             let rangeLength = paramOffset - rangeStart
-            let contents = file.contents.bridge()
+            let contents = file.stringView
 
-            guard let range = contents.byteRangeToNSRange(start: rangeStart, length: rangeLength),
+            let byteRange = ByteRange(location: rangeStart, length: rangeLength)
+            guard let range = contents.byteRangeToNSRange(byteRange),
                 let match = regex.matches(in: file.contents, options: [], range: range).last?.range,
                 match.location != NSNotFound,
                 let braceOffset = contents.NSRangeToByteRange(start: match.location, length: match.length)?.location,
                 let (braceLine, _) = contents.lineAndCharacter(forByteOffset: braceOffset),
                 let (paramLine, _) = contents.lineAndCharacter(forByteOffset: paramOffset),
-                braceLine != paramLine else {
-                    return nil
+                braceLine != paramLine
+            else {
+                return nil
             }
 
-            return StyleViolation(ruleDescription: type(of: self).description,
+            return StyleViolation(ruleDescription: Self.description,
                                   severity: configuration.severity,
                                   location: Location(file: file, byteOffset: paramOffset))
         }

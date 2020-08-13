@@ -13,52 +13,52 @@ public struct ConvenienceTypeRule: ASTRule, OptInRule, ConfigurationProviderRule
         kind: .idiomatic,
         minSwiftVersion: .fourDotOne,
         nonTriggeringExamples: [
-            """
+            Example("""
             enum Math { // enum
               public static let pi = 3.14
             }
-            """,
-            """
+            """),
+            Example("""
             // class with inheritance
             class MathViewController: UIViewController {
               public static let pi = 3.14
             }
-            """,
-            """
+            """),
+            Example("""
             @objc class Math: NSObject { // class visible to Obj-C
               public static let pi = 3.14
             }
-            """,
-            """
+            """),
+            Example("""
             struct Math { // type with non-static declarations
               public static let pi = 3.14
               public let randomNumber = 2
             }
-            """,
-            "class DummyClass {}"
+            """),
+            Example("class DummyClass {}")
         ],
         triggeringExamples: [
-            """
+            Example("""
             ↓struct Math {
               public static let pi = 3.14
             }
-            """,
-            """
+            """),
+            Example("""
             ↓class Math {
               public static let pi = 3.14
             }
-            """,
-            """
+            """),
+            Example("""
             ↓struct Math {
               public static let pi = 3.14
               @available(*, unavailable) init() {}
             }
-            """
+            """)
         ]
     )
 
-    public func validate(file: File, kind: SwiftDeclarationKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftDeclarationKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard let offset = dictionary.offset,
             [.class, .struct].contains(kind),
             dictionary.inheritedTypes.isEmpty,
@@ -67,7 +67,7 @@ public struct ConvenienceTypeRule: ASTRule, OptInRule, ConfigurationProviderRule
         }
 
         let containsInstanceDeclarations = dictionary.substructure.contains { dict in
-            guard let kind = dict.kind.flatMap(SwiftDeclarationKind.init(rawValue:)) else {
+            guard let kind = dict.declarationKind else {
                 return false
             }
 
@@ -88,18 +88,18 @@ public struct ConvenienceTypeRule: ASTRule, OptInRule, ConfigurationProviderRule
         }
 
         return [
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, byteOffset: offset))
         ]
     }
 
-    private func isFunctionUnavailable(file: File, dictionary: [String: SourceKitRepresentable]) -> Bool {
+    private func isFunctionUnavailable(file: SwiftLintFile, dictionary: SourceKittenDictionary) -> Bool {
         return dictionary.swiftAttributes.contains { dict -> Bool in
             guard dict.attribute.flatMap(SwiftDeclarationAttributeKind.init(rawValue:)) == .available,
-                let offset = dict.offset, let length = dict.length,
-                let contents = file.contents.bridge().substringWithByteRange(start: offset, length: length) else {
-                    return false
+                let contents = dict.byteRange.flatMap(file.stringView.substringWithByteRange)
+            else {
+                return false
             }
 
             return contents.contains("unavailable")

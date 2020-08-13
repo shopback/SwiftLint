@@ -15,14 +15,14 @@ public struct DiscouragedOptionalBooleanRule: OptInRule, ConfigurationProviderRu
         triggeringExamples: DiscouragedOptionalBooleanRuleExamples.triggeringExamples
     )
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         let booleanPattern = "Bool\\?"
         let optionalPattern = "Optional\\.some\\(\\s*(true|false)\\s*\\)"
         let pattern = "(" + [booleanPattern, optionalPattern].joined(separator: "|") + ")"
         let excludingKinds = SyntaxKind.commentAndStringKinds
 
         return file.match(pattern: pattern, excludingSyntaxKinds: excludingKinds).map {
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, characterOffset: $0.location))
         }

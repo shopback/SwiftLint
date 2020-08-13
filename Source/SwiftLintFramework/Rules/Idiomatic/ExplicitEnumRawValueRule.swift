@@ -11,69 +11,69 @@ public struct ExplicitEnumRawValueRule: ASTRule, OptInRule, ConfigurationProvide
         description: "Enums should be explicitly assigned their raw values.",
         kind: .idiomatic,
         nonTriggeringExamples: [
-            """
+            Example("""
             enum Numbers {
               case int(Int)
               case short(Int16)
             }
-            """,
-            """
+            """),
+            Example("""
             enum Numbers: Int {
               case one = 1
               case two = 2
             }
-            """,
-            """
+            """),
+            Example("""
             enum Numbers: Double {
               case one = 1.1
               case two = 2.2
             }
-            """,
-            """
+            """),
+            Example("""
             enum Numbers: String {
               case one = "one"
               case two = "two"
             }
-            """,
-            """
+            """),
+            Example("""
             protocol Algebra {}
             enum Numbers: Algebra {
               case one
             }
-            """
+            """)
         ],
         triggeringExamples: [
-            """
+            Example("""
             enum Numbers: Int {
               case one = 10, ↓two, three = 30
             }
-            """,
-            """
+            """),
+            Example("""
             enum Numbers: NSInteger {
               case ↓one
             }
-            """,
-            """
+            """),
+            Example("""
             enum Numbers: String {
               case ↓one
               case ↓two
             }
-            """,
-            """
+            """),
+            Example("""
             enum Numbers: String {
                case ↓one, two = "two"
             }
-            """,
-            """
+            """),
+            Example("""
             enum Numbers: Decimal {
               case ↓one, ↓two
             }
-            """
+            """)
         ]
     )
 
-    public func validate(file: File, kind: SwiftDeclarationKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftDeclarationKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard kind == .enum else {
             return []
         }
@@ -94,13 +94,13 @@ public struct ExplicitEnumRawValueRule: ASTRule, OptInRule, ConfigurationProvide
 
         let violations = violatingOffsetsForEnum(dictionary: dictionary)
         return violations.map {
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, byteOffset: $0))
         }
     }
 
-    private func violatingOffsetsForEnum(dictionary: [String: SourceKitRepresentable]) -> [Int] {
+    private func violatingOffsetsForEnum(dictionary: SourceKittenDictionary) -> [ByteCount] {
         let locs = substructureElements(of: dictionary, matching: .enumcase)
             .compactMap { substructureElements(of: $0, matching: .enumelement) }
             .flatMap(enumElementsMissingInitExpr)
@@ -109,14 +109,14 @@ public struct ExplicitEnumRawValueRule: ASTRule, OptInRule, ConfigurationProvide
         return locs
     }
 
-    private func substructureElements(of dict: [String: SourceKitRepresentable],
-                                      matching kind: SwiftDeclarationKind) -> [[String: SourceKitRepresentable]] {
+    private func substructureElements(of dict: SourceKittenDictionary,
+                                      matching kind: SwiftDeclarationKind) -> [SourceKittenDictionary] {
         return dict.substructure
-            .filter { $0.kind.flatMap(SwiftDeclarationKind.init) == kind }
+            .filter { $0.declarationKind == kind }
     }
 
     private func enumElementsMissingInitExpr(
-        _ enumElements: [[String: SourceKitRepresentable]]) -> [[String: SourceKitRepresentable]] {
+        _ enumElements: [SourceKittenDictionary]) -> [SourceKittenDictionary] {
         return enumElements
             .filter { !$0.elements.contains { $0.kind == "source.lang.swift.structure.elem.init_expr" } }
     }

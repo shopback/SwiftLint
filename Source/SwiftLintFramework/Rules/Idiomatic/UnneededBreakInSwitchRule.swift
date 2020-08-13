@@ -1,11 +1,16 @@
 import Foundation
 import SourceKittenFramework
 
-private func embedInSwitch(_ text: String, case: String = "case .bar") -> String {
-    return "switch foo {\n" +
-            "\(`case`):\n" +
-           "    \(text)\n" +
-           "}"
+private func embedInSwitch(
+    _ text: String,
+    case: String = "case .bar",
+    file: StaticString = #file, line: UInt = #line) -> Example {
+    return Example("""
+        switch foo {
+        \(`case`):
+            \(text)
+        }
+        """, file: file, line: line)
 }
 public struct UnneededBreakInSwitchRule: ConfigurationProviderRule, AutomaticTestableRule {
     public var configuration = SeverityConfiguration(.warning)
@@ -32,21 +37,19 @@ public struct UnneededBreakInSwitchRule: ConfigurationProviderRule, AutomaticTes
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         return file.match(pattern: "break", with: [.keyword]).compactMap { range in
-            let contents = file.contents.bridge()
+            let contents = file.stringView
             guard let byteRange = contents.NSRangeToByteRange(start: range.location, length: range.length),
-                let innerStructure = file.structure.structures(forByteOffset: byteRange.location).last,
-                innerStructure.kind.flatMap(StatementKind.init) == .case,
-                let caseOffset = innerStructure.offset,
-                let caseLength = innerStructure.length,
+                let innerStructure = file.structureDictionary.structures(forByteOffset: byteRange.location).last,
+                innerStructure.statementKind == .case,
+                let caseRange = innerStructure.byteRange,
                 let lastPatternEnd = patternEnd(dictionary: innerStructure) else {
                     return nil
             }
 
-            let caseRange = NSRange(location: caseOffset, length: caseLength)
             let tokens = file.syntaxMap.tokens(inByteRange: caseRange).filter { token in
-                guard let kind = SyntaxKind(rawValue: token.type),
+                guard let kind = token.kind,
                     token.offset > lastPatternEnd else {
                         return false
                 }
@@ -61,20 +64,20 @@ public struct UnneededBreakInSwitchRule: ConfigurationProviderRule, AutomaticTes
 
             // is the `break` found the last (non-comment) token inside `case`?
             guard let lastValidToken = tokens.last,
-                SyntaxKind(rawValue: lastValidToken.type) == .keyword,
+                lastValidToken.kind == .keyword,
                 lastValidToken.offset == byteRange.location,
                 lastValidToken.length == byteRange.length else {
                     return nil
             }
 
-            return StyleViolation(ruleDescription: type(of: self).description,
+            return StyleViolation(ruleDescription: Self.description,
                                   severity: configuration.severity,
                                   location: Location(file: file, characterOffset: range.location))
         }
     }
 
-    private func patternEnd(dictionary: [String: SourceKitRepresentable]) -> Int? {
-        let patternEnds = dictionary.elements.compactMap { subDictionary -> Int? in
+    private func patternEnd(dictionary: SourceKittenDictionary) -> ByteCount? {
+        let patternEnds = dictionary.elements.compactMap { subDictionary -> ByteCount? in
             guard subDictionary.kind == "source.lang.swift.structure.elem.pattern",
                 let offset = subDictionary.offset,
                 let length = subDictionary.length else {

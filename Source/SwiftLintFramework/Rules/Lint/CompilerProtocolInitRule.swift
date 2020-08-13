@@ -15,12 +15,12 @@ public struct CompilerProtocolInitRule: ASTRule, ConfigurationProviderRule {
         ),
         kind: .lint,
         nonTriggeringExamples: [
-            "let set: Set<Int> = [1, 2]\n",
-            "let set = Set(array)\n"
+            Example("let set: Set<Int> = [1, 2]\n"),
+            Example("let set = Set(array)\n")
         ],
         triggeringExamples: [
-            "let set = ↓Set(arrayLiteral: 1, 2)\n",
-            "let set = ↓Set.init(arrayLiteral: 1, 2)\n"
+            Example("let set = ↓Set(arrayLiteral: 1, 2)\n"),
+            Example("let set = ↓Set.init(arrayLiteral: 1, 2)\n")
         ]
     )
 
@@ -29,21 +29,21 @@ public struct CompilerProtocolInitRule: ASTRule, ConfigurationProviderRule {
                 "shouldn't be called directly."
     }
 
-    public func validate(file: File, kind: SwiftExpressionKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftExpressionKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         return violationRanges(in: file, kind: kind, dictionary: dictionary).map {
             let (violation, range) = $0
             return StyleViolation(
-                ruleDescription: type(of: self).description,
+                ruleDescription: Self.description,
                 severity: configuration.severity,
                 location: Location(file: file, characterOffset: range.location),
-                reason: type(of: self).violationReason(protocolName: violation.protocolName, isPlural: false)
+                reason: Self.violationReason(protocolName: violation.protocolName, isPlural: false)
             )
         }
     }
 
-    private func violationRanges(in file: File, kind: SwiftExpressionKind,
-                                 dictionary: [String: SourceKitRepresentable]) -> [(ExpressibleByCompiler, NSRange)] {
+    private func violationRanges(in file: SwiftLintFile, kind: SwiftExpressionKind,
+                                 dictionary: SourceKittenDictionary) -> [(ExpressibleByCompiler, NSRange)] {
         guard kind == .call, let name = dictionary.name else {
             return []
         }
@@ -52,10 +52,9 @@ public struct CompilerProtocolInitRule: ASTRule, ConfigurationProviderRule {
             guard compilerProtocol.initCallNames.contains(name),
                 case let arguments = dictionary.enclosedArguments.compactMap({ $0.name }),
                 compilerProtocol.match(arguments: arguments),
-                let offset = dictionary.offset,
-                let length = dictionary.length,
-                let range = file.contents.bridge().byteRangeToNSRange(start: offset, length: length) else {
-                    continue
+                let range = dictionary.byteRange.flatMap(file.stringView.byteRangeToNSRange)
+            else {
+                continue
             }
 
             return [(compilerProtocol, range)]
@@ -100,7 +99,8 @@ private struct ExpressibleByCompiler {
             "NSOrderedSet",
             "NSSet",
             "SBElementArray",
-            "Set"
+            "Set",
+            "IndexSet"
         ]
         return ExpressibleByCompiler(protocolName: "ExpressibleByArrayLiteral",
                                      types: types, arguments: [["arrayLiteral"]])

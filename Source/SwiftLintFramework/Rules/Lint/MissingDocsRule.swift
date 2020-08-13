@@ -1,8 +1,8 @@
 import SourceKittenFramework
 
-private extension File {
-    func missingDocOffsets(in dictionary: [String: SourceKitRepresentable],
-                           acls: [AccessControlLevel]) -> [(Int, AccessControlLevel)] {
+private extension SwiftLintFile {
+    func missingDocOffsets(in dictionary: SourceKittenDictionary,
+                           acls: [AccessControlLevel]) -> [(ByteCount, AccessControlLevel)] {
         if dictionary.enclosedSwiftAttributes.contains(.override) ||
             !dictionary.inheritedTypes.isEmpty {
             return []
@@ -10,10 +10,14 @@ private extension File {
         let substructureOffsets = dictionary.substructure.flatMap {
             missingDocOffsets(in: $0, acls: acls)
         }
-        guard (dictionary.kind).flatMap(SwiftDeclarationKind.init) != nil,
+        let extensionKinds: Set<SwiftDeclarationKind> = [.extension, .extensionEnum, .extensionClass,
+                                                         .extensionStruct, .extensionProtocol]
+        guard let kind = dictionary.declarationKind,
+            !extensionKinds.contains(kind),
+            case let isDeinit = kind == .functionMethodInstance && dictionary.name == "deinit",
+            !isDeinit,
             let offset = dictionary.offset,
-            let accessibility = dictionary.accessibility,
-            let acl = AccessControlLevel(identifier: accessibility),
+            let acl = dictionary.accessibility,
             acls.contains(acl) else {
                 return substructureOffsets
         }
@@ -42,30 +46,60 @@ public struct MissingDocsRule: OptInRule, ConfigurationProviderRule, AutomaticTe
         minSwiftVersion: .fourDotOne,
         nonTriggeringExamples: [
             // locally-defined superclass member is documented, but subclass member is not
-            "/// docs\npublic class A {\n/// docs\npublic func b() {}\n}\n" +
-            "/// docs\npublic class B: A { override public func b() {} }\n",
+            Example("""
+            /// docs
+            public class A {
+            /// docs
+            public func b() {}
+            }
+            /// docs
+            public class B: A { override public func b() {} }
+            """),
             // externally-defined superclass member is documented, but subclass member is not
-            "import Foundation\n/// docs\npublic class B: NSObject {\n" +
-            "// no docs\noverride public var description: String { fatalError() } }\n"
+            Example("""
+            import Foundation
+            /// docs
+            public class B: NSObject {
+            // no docs
+            override public var description: String { fatalError() } }
+            """),
+            Example("""
+            /// docs
+            public class A {
+                deinit {}
+            }
+            """),
+            Example("""
+            public extension A {}
+            """)
         ],
         triggeringExamples: [
             // public, undocumented
-            "public func a() {}\n",
+            Example("public func a() {}\n"),
             // public, undocumented
-            "// regular comment\npublic func a() {}\n",
+            Example("// regular comment\npublic func a() {}\n"),
             // public, undocumented
-            "/* regular comment */\npublic func a() {}\n",
+            Example("/* regular comment */\npublic func a() {}\n"),
             // protocol member and inherited member are both undocumented
-            "/// docs\npublic protocol A {\n// no docs\nvar b: Int { get } }\n" +
-            "/// docs\npublic struct C: A {\n\npublic let b: Int\n}"
+            Example("""
+            /// docs
+            public protocol A {
+            // no docs
+            var b: Int { get } }
+            /// docs
+            public struct C: A {
+
+            public let b: Int
+            }
+            """)
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         let acls = configuration.parameters.map { $0.value }
-        return file.missingDocOffsets(in: file.structure.dictionary,
-                                      acls: acls).map { (offset: Int, acl: AccessControlLevel) in
-            StyleViolation(ruleDescription: type(of: self).description,
+        let dict = file.structureDictionary
+        return file.missingDocOffsets(in: dict, acls: acls).map { offset, acl in
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.parameters.first { $0.value == acl }?.severity ?? .warning,
                            location: Location(file: file, byteOffset: offset),
                            reason: "\(acl.description) declarations should be documented.")

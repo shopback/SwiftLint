@@ -1,8 +1,6 @@
 import Commandant
 import Dispatch
 import Foundation
-import Result
-import SourceKittenFramework
 import SwiftLintFramework
 
 enum LintOrAnalyzeMode {
@@ -25,19 +23,35 @@ struct LintOrAnalyzeCommand {
 
     static func run(_ options: LintOrAnalyzeOptions) -> Result<(), CommandantError<()>> {
         var violations = [StyleViolation]()
+        let storage = RuleStorage()
         let configuration = Configuration(options: options)
         let reporter = reporterFrom(optionsReporter: options.reporter, configuration: configuration)
         let cache = options.ignoreCache ? nil : LinterCache(configuration: configuration)
         let baseline = prepareBaseline(options: options, configuration: configuration)
 
-        return configuration.visitLintableFiles(options: options, cache: cache) { linter in
-            let currentViolations = preperaViolations(
-                linter: linter,
-                options: options,
-                baseline: baseline
-            )
-            visitorMutationQueue.sync {
-                violations += currentViolations
+        let visitorMutationQueue = DispatchQueue(label: "io.realm.swiftlint.lintVisitorMutation")
+        return configuration.visitLintableFiles(options: options, cache: cache, storage: storage) { linter in
+            var currentViolations: [StyleViolation] = []
+            if options.benchmark {
+                currentViolations = preperaViolations(
+                    linter: linter,
+                    options: options,
+                    baseline: baseline,
+                    storage: storage
+                )
+                visitorMutationQueue.sync {
+                    violations += currentViolations
+                }
+            } else {
+                currentViolations = preperaViolations(
+                    linter: linter,
+                    options: options,
+                    baseline: baseline,
+                    storage: storage
+                )
+                visitorMutationQueue.sync {
+                    violations += currentViolations
+                }
             }
             linter.file.invalidateCache()
             reporter.report(violations: currentViolations, realtimeCondition: true)
@@ -66,13 +80,14 @@ struct LintOrAnalyzeCommand {
         }
     }
 
-    private static func preperaViolations(linter: Linter,
+    private static func preperaViolations(linter: CollectedLinter,
                                           options: LintOrAnalyzeOptions,
-                                          baseline: Baseline) -> [StyleViolation] {
+                                          baseline: Baseline,
+                                          storage: RuleStorage) -> [StyleViolation] {
         var currentViolations: [StyleViolation]
         if options.benchmark {
             let start = Date()
-            let (violationsBeforeLeniency, currentRuleTimes) = linter.styleViolationsAndRuleTimes
+            let (violationsBeforeLeniency, currentRuleTimes) = linter.styleViolationsAndRuleTimes(using: storage)
             currentViolations = applyLeniency(options: options, violations: violationsBeforeLeniency)
             currentViolations = applyBaseline(baseline: baseline, options: options, violations: currentViolations)
             visitorMutationQueue.sync {
@@ -81,7 +96,7 @@ struct LintOrAnalyzeCommand {
             }
             return currentViolations
         } else {
-            currentViolations = applyLeniency(options: options, violations: linter.styleViolations)
+            currentViolations = applyLeniency(options: options, violations: linter.styleViolations(using: storage))
             currentViolations = applyBaseline(baseline: baseline, options: options, violations: currentViolations)
             return currentViolations
         }
@@ -120,7 +135,7 @@ struct LintOrAnalyzeCommand {
         return .success(())
     }
 
-    private static func printStatus(violations: [StyleViolation], files: [File], serious: Int, verb: String) {
+    private static func printStatus(violations: [StyleViolation], files: [SwiftLintFile], serious: Int, verb: String) {
         let pluralSuffix = { (collection: [Any]) -> String in
             return collection.count != 1 ? "s" : ""
         }
@@ -157,10 +172,7 @@ struct LintOrAnalyzeCommand {
         }
         return violations.map {
             if $0.severity == .error {
-                return StyleViolation(ruleDescription: $0.ruleDescription,
-                                      severity: .warning,
-                                      location: $0.location,
-                                      reason: $0.reason)
+                return $0.with(severity: .warning)
             } else {
                 return $0
             }
@@ -186,6 +198,7 @@ struct LintOrAnalyzeOptions {
     let useBaseline: Bool
     let autocorrect: Bool
     let compilerLogPath: String
+    let compileCommands: String
 
     init(_ options: LintOptions) {
         mode = .lint
@@ -205,6 +218,7 @@ struct LintOrAnalyzeOptions {
         useBaseline = options.useBaseline
         autocorrect = false
         compilerLogPath = ""
+        compileCommands = ""
     }
 
     init(_ options: AnalyzeOptions) {
@@ -225,6 +239,7 @@ struct LintOrAnalyzeOptions {
         useBaseline = false
         autocorrect = options.autocorrect
         compilerLogPath = options.compilerLogPath
+        compileCommands = options.compileCommands
     }
 
     var verb: String {

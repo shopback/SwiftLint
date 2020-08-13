@@ -11,20 +11,20 @@ public struct NoGroupingExtensionRule: OptInRule, ConfigurationProviderRule, Aut
         description: "Extensions shouldn't be used to group code within the same source file.",
         kind: .idiomatic,
         nonTriggeringExamples: [
-            "protocol Food {}\nextension Food {}\n",
-            "class Apples {}\nextension Oranges {}\n",
-            "class Box<T> {}\nextension Box where T: Vegetable {}\n"
+            Example("protocol Food {}\nextension Food {}\n"),
+            Example("class Apples {}\nextension Oranges {}\n"),
+            Example("class Box<T> {}\nextension Box where T: Vegetable {}\n")
         ],
         triggeringExamples: [
-            "enum Fruit {}\n↓extension Fruit {}\n",
-            "↓extension Tea: Error {}\nstruct Tea {}\n",
-            "class Ham { class Spam {}}\n↓extension Ham.Spam {}\n",
-            "extension External { struct Gotcha {}}\n↓extension External.Gotcha {}\n"
+            Example("enum Fruit {}\n↓extension Fruit {}\n"),
+            Example("↓extension Tea: Error {}\nstruct Tea {}\n"),
+            Example("class Ham { class Spam {}}\n↓extension Ham.Spam {}\n"),
+            Example("extension External { struct Gotcha {}}\n↓extension External.Gotcha {}\n")
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
-        let collector = NamespaceCollector(dictionary: file.structure.dictionary)
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
+        let collector = NamespaceCollector(dictionary: file.structureDictionary)
         let elements = collector.findAllElements(of: [.class, .enum, .struct, .extension])
 
         let susceptibleNames = Set(elements.compactMap { $0.kind != .extension ? $0.name : nil })
@@ -38,25 +38,21 @@ public struct NoGroupingExtensionRule: OptInRule, ConfigurationProviderRule, Aut
                 return nil
             }
 
-            return StyleViolation(ruleDescription: type(of: self).description,
+            return StyleViolation(ruleDescription: Self.description,
                                   severity: configuration.severity,
                                   location: Location(file: file, byteOffset: element.offset))
         }
     }
 
-    private func hasWhereClause(dictionary: [String: SourceKitRepresentable], file: File) -> Bool {
-        let contents = file.contents.bridge()
-
+    private func hasWhereClause(dictionary: SourceKittenDictionary, file: SwiftLintFile) -> Bool {
         guard let nameOffset = dictionary.nameOffset,
             let nameLength = dictionary.nameLength,
-            let bodyOffset = dictionary.bodyOffset else {
-            return false
-        }
-
-        let rangeStart = nameOffset + nameLength
-        let rangeLength = bodyOffset - rangeStart
-
-        guard let range = contents.byteRangeToNSRange(start: rangeStart, length: rangeLength) else {
+            let bodyOffset = dictionary.bodyOffset,
+            case let contents = file.stringView,
+            case let rangeStart = nameOffset + nameLength,
+            case let rangeLength = bodyOffset - rangeStart,
+            let range = contents.byteRangeToNSRange(ByteRange(location: rangeStart, length: rangeLength))
+        else {
             return false
         }
 

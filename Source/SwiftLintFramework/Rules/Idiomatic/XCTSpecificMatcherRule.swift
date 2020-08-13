@@ -16,9 +16,9 @@ public struct XCTSpecificMatcherRule: ASTRule, OptInRule, ConfigurationProviderR
         triggeringExamples: XCTSpecificMatcherRuleExamples.triggeringExamples
     )
 
-    public func validate(file: File,
+    public func validate(file: SwiftLintFile,
                          kind: SwiftExpressionKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard
             kind == .call,
             let offset = dictionary.offset,
@@ -46,15 +46,7 @@ public struct XCTSpecificMatcherRule: ASTRule, OptInRule, ConfigurationProviderR
                 return firstOffset < secondOffset
             }
             .prefix(2)
-            .compactMap { argument -> String? in
-                guard
-                    let argOffset = argument.offset,
-                    let argLength = argument.length,
-                    let body = file.contents.bridge().substringWithByteRange(start: argOffset, length: argLength)
-                    else { return nil }
-
-                return body
-            }
+            .compactMap { $0.byteRange.flatMap(file.stringView.substringWithByteRange) }
             .sorted { arg1, _ -> Bool in
                 return protectedArguments.contains(arg1)
             }
@@ -81,7 +73,7 @@ public struct XCTSpecificMatcherRule: ASTRule, OptInRule, ConfigurationProviderR
             else { return [] }
 
         return [
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, byteOffset: offset),
                            reason: "Prefer the specific matcher '\(suggestedMatcher)' instead.")

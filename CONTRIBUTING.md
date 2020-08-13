@@ -24,13 +24,6 @@ added/removed/renamed, you'll need to run `make sourcery`, which requires that
 [Sourcery](https://github.com/krzysztofzablocki/Sourcery) be installed on your
 machine. This will update source files to reflect these changes.
 
-## Documentation
-
-If you're making changes to the `description` property of a rule or
-creating a new rule, make sure to run the unit tests
-before pushing your changes. This will update the documentation
-([Rules.md](Rules.md)) to reflect these changes.
-
 ### Tests
 
 SwiftLint supports building via Xcode and Swift Package Manager on macOS, and
@@ -72,11 +65,11 @@ configuration object via the `configuration` property:
 * If none of the provided `RuleConfiguration`s are applicable, you can create one
   specifically for your rule.
 
-See [`ForceCastRule`](https://github.com/realm/SwiftLint/blob/master/Source/SwiftLintFramework/Rules/ForceCastRule.swift)
+See [`ForceCastRule`](https://github.com/realm/SwiftLint/blob/master/Source/SwiftLintFramework/Rules/Idiomatic/ForceCastRule.swift)
 for a rule that allows severity configuration,
-[`FileLengthRule`](https://github.com/realm/SwiftLint/blob/master/Source/SwiftLintFramework/Rules/FileLengthRule.swift)
+[`FileLengthRule`](https://github.com/realm/SwiftLint/blob/master/Source/SwiftLintFramework/Rules/Metrics/FileLengthRule.swift)
 for a rule that has multiple severity levels,
-[`IdentifierNameRule`](https://github.com/realm/SwiftLint/blob/master/Source/SwiftLintFramework/Rules/IdentifierNameRule.swift)
+[`IdentifierNameRule`](https://github.com/realm/SwiftLint/blob/master/Source/SwiftLintFramework/Rules/Style/IdentifierNameRule.swift)
 for a rule that allows name evaluation configuration:
 
 ``` yaml

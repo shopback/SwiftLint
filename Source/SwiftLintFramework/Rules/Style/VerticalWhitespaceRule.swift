@@ -14,20 +14,20 @@ public struct VerticalWhitespaceRule: CorrectableRule, ConfigurationProviderRule
         description: defaultDescriptionReason,
         kind: .style,
         nonTriggeringExamples: [
-            "let abc = 0\n",
-            "let abc = 0\n\n",
-            "/* bcs \n\n\n\n*/",
-            "// bca \n\n"
+            Example("let abc = 0\n"),
+            Example("let abc = 0\n\n"),
+            Example("/* bcs \n\n\n\n*/"),
+            Example("// bca \n\n")
         ],
         triggeringExamples: [
-            "let aaaa = 0\n\n\n",
-            "struct AAAA {}\n\n\n\n",
-            "class BBBB {}\n\n\n"
+            Example("let aaaa = 0\n\n\n"),
+            Example("struct AAAA {}\n\n\n\n"),
+            Example("class BBBB {}\n\n\n")
         ],
         corrections: [
-            "let b = 0\n\n\nclass AAA {}\n": "let b = 0\n\nclass AAA {}\n",
-            "let c = 0\n\n\nlet num = 1\n": "let c = 0\n\nlet num = 1\n",
-            "// bca \n\n\n": "// bca \n\n"
+            Example("let b = 0\n\n\nclass AAA {}\n"): Example("let b = 0\n\nclass AAA {}\n"),
+            Example("let c = 0\n\n\nlet num = 1\n"): Example("let c = 0\n\nlet num = 1\n"),
+            Example("// bca \n\n\n"): Example("// bca \n\n")
         ] // End of line autocorrections are handled by Trailing Newline Rule.
     )
 
@@ -38,7 +38,7 @@ public struct VerticalWhitespaceRule: CorrectableRule, ConfigurationProviderRule
         return defaultDescriptionReason
     }
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         let linesSections = violatingLineSections(in: file)
         guard !linesSections.isEmpty else {
             return []
@@ -46,7 +46,7 @@ public struct VerticalWhitespaceRule: CorrectableRule, ConfigurationProviderRule
 
         return linesSections.map { eachLastLine, eachSectionCount in
             return StyleViolation(
-                ruleDescription: type(of: self).description,
+                ruleDescription: Self.description,
                 severity: configuration.severityConfiguration.severity,
                 location: Location(file: file.path, line: eachLastLine.index),
                 reason: configuredDescriptionReason + " Currently \(eachSectionCount + 1)."
@@ -56,7 +56,7 @@ public struct VerticalWhitespaceRule: CorrectableRule, ConfigurationProviderRule
 
     private typealias LineSection = (lastLine: Line, linesToRemove: Int)
 
-    private func violatingLineSections(in file: File) -> [LineSection] {
+    private func violatingLineSections(in file: SwiftLintFile) -> [LineSection] {
         let nonSpaceRegex = regex("\\S", options: [])
         let filteredLines = file.lines.filter {
             nonSpaceRegex.firstMatch(in: file.contents, options: [], range: $0.range) == nil
@@ -108,7 +108,7 @@ public struct VerticalWhitespaceRule: CorrectableRule, ConfigurationProviderRule
         return blankLinesSections
     }
 
-    public func correct(file: File) -> [Correction] {
+    public func correct(file: SwiftLintFile) -> [Correction] {
         let linesSections = violatingLineSections(in: file)
         if linesSections.isEmpty { return [] }
 
@@ -131,7 +131,7 @@ public struct VerticalWhitespaceRule: CorrectableRule, ConfigurationProviderRule
 
             // removes lines by skipping them from correctedLines
             if Set(indexOfLinesToDelete).contains(currentLine.index) {
-                let description = type(of: self).description
+                let description = Self.description
                 let location = Location(file: file, characterOffset: currentLine.range.location)
 
                 //reports every line that is being deleted

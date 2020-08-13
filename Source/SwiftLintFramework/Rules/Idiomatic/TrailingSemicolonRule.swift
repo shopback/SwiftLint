@@ -11,37 +11,37 @@ public struct TrailingSemicolonRule: SubstitutionCorrectableRule, ConfigurationP
         name: "Trailing Semicolon",
         description: "Lines should not have trailing semicolons.",
         kind: .idiomatic,
-        nonTriggeringExamples: [ "let a = 0\n" ],
+        nonTriggeringExamples: [ Example("let a = 0\n") ],
         triggeringExamples: [
-            "let a = 0↓;\n",
-            "let a = 0↓;\nlet b = 1\n",
-            "let a = 0↓;;\n",
-            "let a = 0↓;    ;;\n",
-            "let a = 0↓; ; ;\n"
+            Example("let a = 0↓;\n"),
+            Example("let a = 0↓;\nlet b = 1\n"),
+            Example("let a = 0↓;;\n"),
+            Example("let a = 0↓;    ;;\n"),
+            Example("let a = 0↓; ; ;\n")
         ],
         corrections: [
-            "let a = 0↓;\n": "let a = 0\n",
-            "let a = 0↓;\nlet b = 1\n": "let a = 0\nlet b = 1\n",
-            "let a = 0↓;;\n": "let a = 0\n",
-            "let a = 0↓;    ;;\n": "let a = 0\n",
-            "let a = 0↓; ; ;\n": "let a = 0\n"
+            Example("let a = 0↓;\n"): Example("let a = 0\n"),
+            Example("let a = 0↓;\nlet b = 1\n"): Example("let a = 0\nlet b = 1\n"),
+            Example("let a = 0↓;;\n"): Example("let a = 0\n"),
+            Example("let a = 0↓;    ;;\n"): Example("let a = 0\n"),
+            Example("let a = 0↓; ; ;\n"): Example("let a = 0\n")
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         return violationRanges(in: file).map {
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, characterOffset: $0.location))
         }
     }
 
-    public func violationRanges(in file: File) -> [NSRange] {
+    public func violationRanges(in file: SwiftLintFile) -> [NSRange] {
         return file.match(pattern: "(;+([^\\S\\n]?)*)+;?$",
                           excludingSyntaxKinds: SyntaxKind.commentAndStringKinds)
     }
 
-    public func substitution(for violationRange: NSRange, in file: File) -> (NSRange, String) {
+    public func substitution(for violationRange: NSRange, in file: SwiftLintFile) -> (NSRange, String)? {
         return (violationRange, "")
     }
 }

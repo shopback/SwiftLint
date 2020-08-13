@@ -1,14 +1,13 @@
 import SwiftLintFramework
 import XCTest
 
-private func funcWithParameters(_ parameters: String, violates: Bool = false) -> String {
+private func funcWithParameters(_ parameters: String,
+                                violates: Bool = false,
+                                file: StaticString = #file,
+                                line: UInt = #line) -> Example {
     let marker = violates ? "↓" : ""
 
-    return "func \(marker)abc(\(parameters)) {}\n"
-}
-
-private func violatingFuncWithParameters(_ parameters: String) -> String {
-    return funcWithParameters(parameters, violates: true)
+    return Example("func \(marker)abc(\(parameters)) {}\n", file: file, line: line)
 }
 
 class FunctionParameterCountRuleTests: XCTestCase {
@@ -47,11 +46,5 @@ class FunctionParameterCountRuleTests: XCTestCase {
             .with(triggeringExamples: triggeringExamples)
 
         verifyRule(description, ruleConfiguration: ["ignores_default_parameters": false])
-    }
-
-    private func violations(_ string: String) -> [StyleViolation] {
-        let config = makeConfig(nil, FunctionParameterCountRule.description.identifier)!
-
-        return SwiftLintFrameworkTests.violations(string, config: config)
     }
 }

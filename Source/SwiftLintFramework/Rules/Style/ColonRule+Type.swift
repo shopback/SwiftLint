@@ -22,8 +22,8 @@ internal extension ColonRule {
             "\\S)"                      // lazily to the first non-whitespace character.
     }
 
-    func typeColonViolationRanges(in file: File, matching pattern: String) -> [NSRange] {
-        let nsstring = file.contents.bridge()
+    func typeColonViolationRanges(in file: SwiftLintFile, matching pattern: String) -> [NSRange] {
+        let contents = file.stringView
         return file.matchesAndTokens(matching: pattern).filter { match, syntaxTokens in
             if match.range(at: 2).length > 0 && syntaxTokens.count > 2 { // captured a generic definition
                 let tokens = [syntaxTokens.first, syntaxTokens.last].compactMap { $0 }
@@ -32,20 +32,20 @@ internal extension ColonRule {
 
             return isValidMatch(syntaxTokens: syntaxTokens, file: file)
         }.compactMap { match, syntaxTokens in
-            let identifierRange = nsstring
-                .byteRangeToNSRange(start: syntaxTokens[0].offset, length: 0)
+            let firstSyntaxTokenByteRange = ByteRange(location: syntaxTokens[0].offset, length: 0)
+            let identifierRange = contents.byteRangeToNSRange(firstSyntaxTokenByteRange)
             return identifierRange.map { NSUnionRange($0, match.range) }
         }
     }
 
-    private func isValidMatch(syntaxTokens: [SyntaxToken], file: File) -> Bool {
+    private func isValidMatch(syntaxTokens: [SwiftLintSyntaxToken], file: SwiftLintFile) -> Bool {
         let syntaxKinds = syntaxTokens.kinds
 
         guard syntaxKinds.count == 2 else {
             return false
         }
 
-        let validKinds: Bool
+        var validKinds: Bool
         switch (syntaxKinds[0], syntaxKinds[1]) {
         case (.identifier, .typeidentifier),
              (.typeidentifier, .typeidentifier):
@@ -53,6 +53,11 @@ internal extension ColonRule {
         case (.identifier, .keyword),
              (.typeidentifier, .keyword):
             validKinds = file.isTypeLike(token: syntaxTokens[1])
+            // Exclude explicit "Self" type because of static variables
+            if syntaxKinds[0] == .identifier,
+                file.contents(for: syntaxTokens[1]) == "Self" {
+                validKinds = false
+            }
         case (.keyword, .typeidentifier):
             validKinds = file.isTypeLike(token: syntaxTokens[0])
         default:
@@ -67,10 +72,9 @@ internal extension ColonRule {
     }
 }
 
-private extension File {
-    func isTypeLike(token: SyntaxToken) -> Bool {
-        let nsstring = contents.bridge()
-        guard let text = nsstring.substringWithByteRange(start: token.offset, length: token.length),
+private extension SwiftLintFile {
+    func isTypeLike(token: SwiftLintSyntaxToken) -> Bool {
+        guard let text = contents(for: token),
             let firstLetter = text.unicodeScalars.first else {
                 return false
         }

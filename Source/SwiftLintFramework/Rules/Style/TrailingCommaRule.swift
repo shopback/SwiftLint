@@ -6,29 +6,32 @@ private enum TrailingCommaReason: String {
     case extraTrailingCommaReason = "Collection literals should not have trailing commas."
 }
 
-private typealias CommaRuleViolation = (index: Int, reason: TrailingCommaReason)
+private typealias CommaRuleViolation = (index: ByteCount, reason: TrailingCommaReason)
 
 public struct TrailingCommaRule: SubstitutionCorrectableASTRule, ConfigurationProviderRule {
     public var configuration = TrailingCommaConfiguration()
 
     public init() {}
 
-    private static let triggeringExamples =  [
-        "let foo = [1, 2, 3↓,]\n",
-        "let foo = [1, 2, 3↓, ]\n",
-        "let foo = [1, 2, 3   ↓,]\n",
-        "let foo = [1: 2, 2: 3↓, ]\n",
-        "struct Bar {\n let foo = [1: 2, 2: 3↓, ]\n}\n",
-        "let foo = [1, 2, 3↓,] + [4, 5, 6↓,]\n",
-        "let example = [ 1,\n2↓,\n // 3,\n]",
-        "let foo = [\"אבג\", \"αβγ\", \"🇺🇸\"↓,]\n",
-        "class C {\n #if true\n func f() {\n let foo = [1, 2, 3↓,]\n }\n #endif\n}",
-        "foo([1: \"\\(error)\"↓,])\n"
+    private static let triggeringExamples: [Example] =  [
+        Example("let foo = [1, 2, 3↓,]\n"),
+        Example("let foo = [1, 2, 3↓, ]\n"),
+        Example("let foo = [1, 2, 3   ↓,]\n"),
+        Example("let foo = [1: 2, 2: 3↓, ]\n"),
+        Example("struct Bar {\n let foo = [1: 2, 2: 3↓, ]\n}\n"),
+        Example("let foo = [1, 2, 3↓,] + [4, 5, 6↓,]\n"),
+        Example("let example = [ 1,\n2↓,\n // 3,\n]"),
+        Example("let foo = [\"אבג\", \"αβγ\", \"🇺🇸\"↓,]\n"),
+        Example("class C {\n #if true\n func f() {\n let foo = [1, 2, 3↓,]\n }\n #endif\n}"),
+        Example("foo([1: \"\\(error)\"↓,])\n")
     ]
 
-    private static let corrections: [String: String] = {
-        let fixed = triggeringExamples.map { $0.replacingOccurrences(of: "↓,", with: "") }
-        var result: [String: String] = [:]
+    private static let corrections: [Example: Example] = {
+        let fixed = triggeringExamples.map { example -> Example in
+            let fixedString = example.code.replacingOccurrences(of: "↓,", with: "")
+            return example.with(code: fixedString)
+        }
+        var result: [Example: Example] = [:]
         for (triggering, correction) in zip(triggeringExamples, fixed) {
             result[triggering] = correction
         }
@@ -41,13 +44,13 @@ public struct TrailingCommaRule: SubstitutionCorrectableASTRule, ConfigurationPr
         description: "Trailing commas in arrays and dictionaries should be avoided/enforced.",
         kind: .style,
         nonTriggeringExamples: [
-            "let foo = [1, 2, 3]\n",
-            "let foo = []\n",
-            "let foo = [:]\n",
-            "let foo = [1: 2, 2: 3]\n",
-            "let foo = [Void]()\n",
-            "let example = [ 1,\n 2\n // 3,\n]",
-            "foo([1: \"\\(error)\"])\n"
+            Example("let foo = [1, 2, 3]\n"),
+            Example("let foo = []\n"),
+            Example("let foo = [:]\n"),
+            Example("let foo = [1: 2, 2: 3]\n"),
+            Example("let foo = [Void]()\n"),
+            Example("let example = [ 1,\n 2\n // 3,\n]"),
+            Example("foo([1: \"\\(error)\"])\n")
         ],
         triggeringExamples: TrailingCommaRule.triggeringExamples,
         corrections: TrailingCommaRule.corrections
@@ -55,8 +58,8 @@ public struct TrailingCommaRule: SubstitutionCorrectableASTRule, ConfigurationPr
 
     private static let commaRegex = regex(",", options: [.ignoreMetacharacters])
 
-    public func validate(file: File, kind: SwiftExpressionKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftExpressionKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         if let (index, reason) = violationIndexAndReason(in: file, kind: kind, dictionary: dictionary) {
             return violations(file: file, byteOffset: index, reason: reason.rawValue)
         } else {
@@ -64,23 +67,25 @@ public struct TrailingCommaRule: SubstitutionCorrectableASTRule, ConfigurationPr
         }
     }
 
-    public func violationRanges(in file: File, kind: SwiftExpressionKind,
-                                dictionary: [String: SourceKitRepresentable]) -> [NSRange] {
+    public func violationRanges(in file: SwiftLintFile, kind: SwiftExpressionKind,
+                                dictionary: SourceKittenDictionary) -> [NSRange] {
         guard let (offset, reason) = violationIndexAndReason(in: file, kind: kind, dictionary: dictionary),
-            case let length = reason == .extraTrailingCommaReason ? 1 : 0,
-            let range = file.contents.bridge().byteRangeToNSRange(start: offset, length: length) else {
-                return []
+            case let length: ByteCount = reason == .extraTrailingCommaReason ? 1 : 0,
+            case let byteRange = ByteRange(location: offset, length: length),
+            let range = file.stringView.byteRangeToNSRange(byteRange)
+        else {
+            return []
         }
 
         return [range]
     }
 
-    public func substitution(for violationRange: NSRange, in file: File) -> (NSRange, String) {
+    public func substitution(for violationRange: NSRange, in file: SwiftLintFile) -> (NSRange, String)? {
         return (violationRange, configuration.mandatoryComma ? "," : "")
     }
 
-    private func violationIndexAndReason(in file: File, kind: SwiftExpressionKind,
-                                         dictionary: [String: SourceKitRepresentable]) -> CommaRuleViolation? {
+    private func violationIndexAndReason(in file: SwiftLintFile, kind: SwiftExpressionKind,
+                                         dictionary: SourceKittenDictionary) -> CommaRuleViolation? {
         let allowedKinds: Set<SwiftExpressionKind> = [.array, .dictionary]
 
         guard let bodyOffset = dictionary.bodyOffset,
@@ -89,20 +94,13 @@ public struct TrailingCommaRule: SubstitutionCorrectableASTRule, ConfigurationPr
                 return nil
         }
 
-        let endPositions = dictionary.elements.compactMap { dictionary -> Int? in
-            guard let offset = dictionary.offset,
-                let length = dictionary.length else {
-                    return nil
-            }
-
-            return offset + length
-        }
+        let endPositions = dictionary.elements.compactMap { $0.byteRange?.upperBound }
 
         guard let lastPosition = endPositions.max(), bodyLength + bodyOffset >= lastPosition else {
             return nil
         }
 
-        let contents = file.contents.bridge()
+        let contents = file.stringView
         if let (startLine, _) = contents.lineAndCharacter(forByteOffset: bodyOffset),
             let (endLine, _) = contents.lineAndCharacter(forByteOffset: lastPosition),
             configuration.mandatoryComma && startLine == endLine {
@@ -111,11 +109,12 @@ public struct TrailingCommaRule: SubstitutionCorrectableASTRule, ConfigurationPr
         }
 
         let length = bodyLength + bodyOffset - lastPosition
-        let contentsAfterLastElement = contents.substringWithByteRange(start: lastPosition, length: length) ?? ""
+        let byteRangeAfterLastElement = ByteRange(location: lastPosition, length: length)
+        let contentsAfterLastElement = contents.substringWithByteRange(byteRangeAfterLastElement) ?? ""
 
         // if a trailing comma is not present
-        guard let commaIndex = trailingCommaIndex(contents: contentsAfterLastElement, file: file,
-                                                  offset: lastPosition) else {
+        guard let commaIndex = trailingCommaIndex(contents: contentsAfterLastElement, file: file, offset: lastPosition)
+        else {
             guard configuration.mandatoryComma else {
                 return nil
             }
@@ -132,28 +131,48 @@ public struct TrailingCommaRule: SubstitutionCorrectableASTRule, ConfigurationPr
         return (violationOffset, .extraTrailingCommaReason)
     }
 
-    private func violations(file: File, byteOffset: Int, reason: String) -> [StyleViolation] {
+    private func violations(file: SwiftLintFile, byteOffset: ByteCount, reason: String) -> [StyleViolation] {
         return [
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severityConfiguration.severity,
                            location: Location(file: file, byteOffset: byteOffset),
-                           reason: reason
-            )
+                           reason: reason)
         ]
     }
 
-    private func trailingCommaIndex(contents: String, file: File, offset: Int) -> Int? {
-        let nsstring = contents.bridge()
-        let range = NSRange(location: 0, length: nsstring.length)
-        let ranges = TrailingCommaRule.commaRegex.matches(in: contents, options: [], range: range).map { $0.range }
-
+    private func trailingCommaIndex(contents: String, file: SwiftLintFile, offset: ByteCount) -> ByteCount? {
         // skip commas in comments
-        return ranges.last {
-            let range = NSRange(location: $0.location + offset, length: $0.length)
-            let kinds = file.syntaxMap.kinds(inByteRange: range)
-            return SyntaxKind.commentKinds.isDisjoint(with: kinds)
-        }.flatMap {
-            nsstring.NSRangeToByteRange(start: $0.location, length: $0.length)
-        }?.location
+        return TrailingCommaRule.commaRegex
+            .matches(in: contents, options: [], range: contents.fullNSRange)
+            .map { $0.range }
+            .last { nsRange in
+                let offsetCharacter = file.stringView.location(fromByteOffset: offset)
+                let offsetNSRange = NSRange(location: nsRange.location + offsetCharacter, length: nsRange.length)
+                let byteRange = file.stringView.NSRangeToByteRange(offsetNSRange)!
+                let kinds = file.syntaxMap.kinds(inByteRange: byteRange)
+                return SyntaxKind.commentKinds.isDisjoint(with: kinds)
+            }
+            .flatMap(contents.NSRangeToByteRange)?
+            .location
+    }
+}
+
+private extension String {
+    func NSRangeToByteRange(_ nsRange: NSRange) -> ByteRange? {
+        let utf16View = utf16
+        let utf8View = utf8
+
+        let startUTF16Index = utf16View.index(utf16View.startIndex, offsetBy: nsRange.location)
+        let endUTF16Index = utf16View.index(startUTF16Index, offsetBy: nsRange.length)
+
+        guard let startUTF8Index = startUTF16Index.samePosition(in: utf8View),
+            let endUTF8Index = endUTF16Index.samePosition(in: utf8View)
+        else {
+            return nil
+        }
+
+        let byteOffset = utf8View.distance(from: utf8View.startIndex, to: startUTF8Index)
+        let length = utf8View.distance(from: startUTF8Index, to: endUTF8Index)
+        return ByteRange(location: ByteCount(byteOffset), length: ByteCount(length))
     }
 }

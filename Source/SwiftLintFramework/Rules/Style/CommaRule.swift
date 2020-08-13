@@ -12,39 +12,39 @@ public struct CommaRule: SubstitutionCorrectableRule, ConfigurationProviderRule,
         description: "There should be no space before and one after any comma.",
         kind: .style,
         nonTriggeringExamples: [
-            "func abc(a: String, b: String) { }",
-            "abc(a: \"string\", b: \"string\"",
-            "enum a { case a, b, c }",
-            "func abc(\n  a: String,  // comment\n  bcd: String // comment\n) {\n}\n",
-            "func abc(\n  a: String,\n  bcd: String\n) {\n}\n",
-            "#imageLiteral(resourceName: \"foo,bar,baz\")"
+            Example("func abc(a: String, b: String) { }"),
+            Example("abc(a: \"string\", b: \"string\""),
+            Example("enum a { case a, b, c }"),
+            Example("func abc(\n  a: String,  // comment\n  bcd: String // comment\n) {\n}\n"),
+            Example("func abc(\n  a: String,\n  bcd: String\n) {\n}\n"),
+            Example("#imageLiteral(resourceName: \"foo,bar,baz\")")
         ],
         triggeringExamples: [
-            "func abc(a: String↓ ,b: String) { }",
-            "func abc(a: String↓ ,b: String↓ ,c: String↓ ,d: String) { }",
-            "abc(a: \"string\"↓,b: \"string\"",
-            "enum a { case a↓ ,b }",
-            "let result = plus(\n    first: 3↓ , // #683\n    second: 4\n)\n"
+            Example("func abc(a: String↓ ,b: String) { }"),
+            Example("func abc(a: String↓ ,b: String↓ ,c: String↓ ,d: String) { }"),
+            Example("abc(a: \"string\"↓,b: \"string\""),
+            Example("enum a { case a↓ ,b }"),
+            Example("let result = plus(\n    first: 3↓ , // #683\n    second: 4\n)\n")
         ],
         corrections: [
-            "func abc(a: String↓,b: String) {}\n": "func abc(a: String, b: String) {}\n",
-            "abc(a: \"string\"↓,b: \"string\"\n": "abc(a: \"string\", b: \"string\"\n",
-            "abc(a: \"string\"↓  ,  b: \"string\"\n": "abc(a: \"string\", b: \"string\"\n",
-            "enum a { case a↓  ,b }\n": "enum a { case a, b }\n",
-            "let a = [1↓,1]\nlet b = 1\nf(1, b)\n": "let a = [1, 1]\nlet b = 1\nf(1, b)\n",
-            "let a = [1↓,1↓,1↓,1]\n": "let a = [1, 1, 1, 1]\n"
+            Example("func abc(a: String↓,b: String) {}\n"): Example("func abc(a: String, b: String) {}\n"),
+            Example("abc(a: \"string\"↓,b: \"string\"\n"): Example("abc(a: \"string\", b: \"string\"\n"),
+            Example("abc(a: \"string\"↓  ,  b: \"string\"\n"): Example("abc(a: \"string\", b: \"string\"\n"),
+            Example("enum a { case a↓  ,b }\n"): Example("enum a { case a, b }\n"),
+            Example("let a = [1↓,1]\nlet b = 1\nf(1, b)\n"): Example("let a = [1, 1]\nlet b = 1\nf(1, b)\n"),
+            Example("let a = [1↓,1↓,1↓,1]\n"): Example("let a = [1, 1, 1, 1]\n")
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         return violationRanges(in: file).map {
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, characterOffset: $0.location))
         }
     }
 
-    public func substitution(for violationRange: NSRange, in file: File) -> (NSRange, String) {
+    public func substitution(for violationRange: NSRange, in file: SwiftLintFile) -> (NSRange, String)? {
         return (violationRange, ", ")
     }
 
@@ -72,10 +72,9 @@ public struct CommaRule: SubstitutionCorrectableRule, ConfigurationProviderRule,
     private static let excludingSyntaxKindsForFirstCapture = SyntaxKind.commentAndStringKinds.union([.objectLiteral])
     private static let excludingSyntaxKindsForSecondCapture = SyntaxKind.commentKinds.union([.objectLiteral])
 
-    public func violationRanges(in file: File) -> [NSRange] {
-        let contents = file.contents
-        let nsstring = contents.bridge()
-        let range = NSRange(location: 0, length: nsstring.length)
+    public func violationRanges(in file: SwiftLintFile) -> [NSRange] {
+        let contents = file.stringView
+        let range = contents.range
         let syntaxMap = file.syntaxMap
         return CommaRule.regularExpression
             .matches(in: contents, options: [], range: range)
@@ -89,7 +88,7 @@ public struct CommaRule: SubstitutionCorrectableRule, ConfigurationProviderRule,
 
                 // check first captured range
                 let firstRange = match.range(at: indexStartRange)
-                guard let matchByteFirstRange = nsstring
+                guard let matchByteFirstRange = contents
                     .NSRangeToByteRange(start: firstRange.location, length: firstRange.length)
                     else { return nil }
 
@@ -102,13 +101,13 @@ public struct CommaRule: SubstitutionCorrectableRule, ConfigurationProviderRule,
 
                 // If the first range does not start with comma, it already violates this rule
                 // no matter what is contained in the second range.
-                if !nsstring.substring(with: firstRange).hasPrefix(", ") {
+                if !contents.substring(with: firstRange).hasPrefix(", ") {
                     return firstRange
                 }
 
                 // check second captured range
                 let secondRange = match.range(at: indexStartRange + 1)
-                guard let matchByteSecondRange = nsstring
+                guard let matchByteSecondRange = contents
                     .NSRangeToByteRange(start: secondRange.location, length: secondRange.length)
                     else { return nil }
 

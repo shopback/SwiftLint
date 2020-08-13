@@ -38,52 +38,42 @@ public struct YodaConditionRule: ASTRule, OptInRule, ConfigurationProviderRule, 
         description: "The variable should be placed on the left, the constant on the right of a comparison operator.",
         kind: .lint,
         nonTriggeringExamples: [
-            "if foo == 42 {}\n",
-            "if foo <= 42.42 {}\n",
-            "guard foo >= 42 else { return }\n",
-            "guard foo != \"str str\" else { return }",
-            "while foo < 10 { }\n",
-            "while foo > 1 { }\n",
-            "while foo + 1 == 2",
-            "if optionalValue?.property ?? 0 == 2",
-            "if foo == nil"
+            Example("if foo == 42 {}\n"),
+            Example("if foo <= 42.42 {}\n"),
+            Example("guard foo >= 42 else { return }\n"),
+            Example("guard foo != \"str str\" else { return }"),
+            Example("while foo < 10 { }\n"),
+            Example("while foo > 1 { }\n"),
+            Example("while foo + 1 == 2"),
+            Example("if optionalValue?.property ?? 0 == 2"),
+            Example("if foo == nil")
         ],
         triggeringExamples: [
-            "↓if 42 == foo {}\n",
-            "↓if 42.42 >= foo {}\n",
-            "↓guard 42 <= foo else { return }\n",
-            "↓guard \"str str\" != foo else { return }",
-            "↓while 10 > foo { }",
-            "↓while 1 < foo { }",
-            "↓if nil == foo"
+            Example("↓if 42 == foo {}\n"),
+            Example("↓if 42.42 >= foo {}\n"),
+            Example("↓guard 42 <= foo else { return }\n"),
+            Example("↓guard \"str str\" != foo else { return }"),
+            Example("↓while 10 > foo { }"),
+            Example("↓while 1 < foo { }"),
+            Example("↓if nil == foo")
         ])
 
-    public func validate(file: File,
+    public func validate(file: SwiftLintFile,
                          kind: StatementKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
-        guard observedStatements.contains(kind),
-              let offset = dictionary.offset,
-              let length = dictionary.length
-          else {
-                return []
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
+        guard observedStatements.contains(kind), let offset = dictionary.offset else {
+            return []
         }
 
         let matches = file.lines.filter({ $0.byteRange.contains(offset) }).reduce(into: []) { matches, line in
-            let range = NSRange(location: 0, length: line.content.bridge().length)
+            let range = line.content.fullNSRange
             let lineMatches = YodaConditionRule.regularExpression.matches(in: line.content, options: [], range: range)
             matches.append(contentsOf: lineMatches)
         }
 
         return matches.map { _ -> StyleViolation in
-            let characterOffset = startOffset(of: offset, with: length, in: file)
-            let location = Location(file: file, characterOffset: characterOffset)
-            return StyleViolation(ruleDescription: type(of: self).description, severity: configuration.severity,
-                                  location: location)
+            return StyleViolation(ruleDescription: Self.description, severity: configuration.severity,
+                                  location: Location(file: file, byteOffset: offset))
         }
-    }
-
-    private func startOffset(of offset: Int, with length: Int, in file: File) -> Int {
-        let range = file.contents.bridge().byteRangeToNSRange(start: offset, length: length)
-        return range?.location ?? offset
     }
 }

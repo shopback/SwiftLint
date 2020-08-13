@@ -15,37 +15,37 @@ public struct RequiredDeinitRule: ASTRule, OptInRule, ConfigurationProviderRule,
         description: "Classes should have an explicit deinit method.",
         kind: .lint,
         nonTriggeringExamples: [
-            """
+            Example("""
             class Apple {
                 deinit { }
             }
-            """,
-            "enum Banana { }",
-            "protocol Cherry { }",
-            "struct Damson { }",
-            """
+            """),
+            Example("enum Banana { }"),
+            Example("protocol Cherry { }"),
+            Example("struct Damson { }"),
+            Example("""
             class Outer {
                 deinit { print("Deinit Outer") }
                 class Inner {
                     deinit { print("Deinit Inner") }
                 }
             }
-            """
+            """)
         ],
         triggeringExamples: [
-            "↓class Apple { }",
-            "↓class Banana: NSObject, Equatable { }",
-            """
+            Example("↓class Apple { }"),
+            Example("↓class Banana: NSObject, Equatable { }"),
+            Example("""
             ↓class Cherry {
                 // deinit { }
             }
-            """,
-            """
+            """),
+            Example("""
             ↓class Damson {
                 func deinitialize() { }
             }
-            """,
-            """
+            """),
+            Example("""
             class Outer {
                 func hello() -> String { return "outer" }
                 deinit { }
@@ -53,8 +53,8 @@ public struct RequiredDeinitRule: ASTRule, OptInRule, ConfigurationProviderRule,
                     func hello() -> String { return "inner" }
                 }
             }
-            """,
-            """
+            """),
+            Example("""
             ↓class Outer {
                 func hello() -> String { return "outer" }
                 class Inner {
@@ -62,15 +62,15 @@ public struct RequiredDeinitRule: ASTRule, OptInRule, ConfigurationProviderRule,
                     deinit { }
                 }
             }
-            """
+            """)
         ]
     )
 
     public init() {}
 
-    public func validate(file: File,
+    public func validate(file: SwiftLintFile,
                          kind: SwiftDeclarationKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard kind == .class,
             let offset = dictionary.offset else {
                 return []
@@ -88,7 +88,7 @@ public struct RequiredDeinitRule: ASTRule, OptInRule, ConfigurationProviderRule,
         }
 
         return [
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, byteOffset: offset))
         ]

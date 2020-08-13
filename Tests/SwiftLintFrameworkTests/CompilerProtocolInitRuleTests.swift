@@ -8,22 +8,34 @@ class CompilerProtocolInitRuleTests: XCTestCase {
         verifyRule(CompilerProtocolInitRule.description)
     }
 
-    func testViolationMessageForExpressibleByIntegerLiteral() {
-        guard let config = makeConfig(nil, ruleID) else {
-            XCTFail("Failed to create configuration")
-            return
-        }
-        let allViolations = violations("let a = NSNumber(integerLiteral: 1)", config: config)
+    func testViolationMessageForExpressibleByIntegerLiteral() throws {
+        let config = try XCTUnwrap(makeConfig(nil, ruleID))
+        let allViolations = violations(Example("let a = NSNumber(integerLiteral: 1)"), config: config)
 
-        let compilerProtocolInitViolation = allViolations.first { $0.ruleDescription.identifier == ruleID }
-        if let violation = compilerProtocolInitViolation {
-            XCTAssertEqual(
-                violation.reason,
-                "The initializers declared in compiler protocol ExpressibleByIntegerLiteral " +
-                "shouldn't be called directly."
-            )
-        } else {
-            XCTFail("A compiler protocol init violation should have been triggered!")
-        }
+        let compilerProtocolInitViolation = allViolations.first { $0.ruleIdentifier == ruleID }
+        let violation = try XCTUnwrap(
+            compilerProtocolInitViolation,
+            "A compiler protocol init violation should have been triggered!"
+        )
+        XCTAssertEqual(
+            violation.reason,
+            "The initializers declared in compiler protocol ExpressibleByIntegerLiteral shouldn't be called directly."
+        )
     }
 }
+
+// https://bugs.swift.org/browse/SR-11501
+#if SWIFT_PACKAGE && os(macOS) && compiler(<5.2)
+private enum UnwrapError: Error {
+    case missingValue
+}
+
+private func XCTUnwrap<T>(_ expression: @autoclosure () throws -> T?,
+                          _ message: @autoclosure () -> String = "") throws -> T {
+    if let value = try expression() {
+        return value
+    } else {
+        throw UnwrapError.missingValue
+    }
+}
+#endif

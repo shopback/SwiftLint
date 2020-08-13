@@ -14,7 +14,9 @@ class ReporterTests: XCTestCase {
             HTMLReporter.self,
             EmojiReporter.self,
             SonarQubeReporter.self,
-            MarkdownReporter.self
+            MarkdownReporter.self,
+            GitHubActionsLoggingReporter.self,
+            GitLabJUnitReporter.self
         ]
         for reporter in reporters {
             XCTAssertEqual(reporter.identifier, reporterFrom(identifier: reporter.identifier).identifier)
@@ -22,7 +24,7 @@ class ReporterTests: XCTestCase {
     }
 
     private func stringFromFile(_ filename: String) -> String {
-        return File(path: "\(testResourcesPath)/\(filename)")!.contents
+        return SwiftLintFile(path: "\(testResourcesPath)/\(filename)")!.contents
     }
 
     private func generateViolations() -> [StyleViolation] {
@@ -56,6 +58,18 @@ class ReporterTests: XCTestCase {
     func testEmojiReporter() {
         let expectedOutput = stringFromFile("CannedEmojiReporterOutput.txt")
         let result = EmojiReporter.generateReport(generateViolations())
+        XCTAssertEqual(result, expectedOutput)
+    }
+
+    func testGitHubActionsLoggingReporter() {
+        let expectedOutput = stringFromFile("CannedGitHubActionsLoggingReporterOutput.txt")
+        let result = GitHubActionsLoggingReporter.generateReport(generateViolations())
+        XCTAssertEqual(result, expectedOutput)
+    }
+
+    func testGitLabJUnitReporter() {
+        let expectedOutput = stringFromFile("CannedGitLabJUnitReporterOutput.xml")
+        let result = GitLabJUnitReporter.generateReport(generateViolations())
         XCTAssertEqual(result, expectedOutput)
     }
 

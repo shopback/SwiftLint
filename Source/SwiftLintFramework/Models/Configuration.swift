@@ -1,26 +1,43 @@
 import Foundation
 import SourceKittenFramework
 
+/// The configuration struct for SwiftLint. User-defined in the `.swiftlint.yml` file, drives the behavior of SwiftLint.
 public struct Configuration: Hashable {
-    // Represents how a Configuration object can be configured with regards to rules.
+    /// Represents how a Configuration object can be configured with regards to rules.
     public enum RulesMode {
+        /// The default rules mode, which will enable all rules that aren't defined as being opt-in
+        /// (conforming to the `OptInRule` protocol), minus the rules listed in `disabled`, plus the rules lised in
+        /// `optIn`.
         case `default`(disabled: [String], optIn: [String])
+        /// Only enable the rules explicitly listed.
         case whitelisted([String])
+        /// Enable all available rules.
         case allEnabled
     }
 
     // MARK: Properties
 
+    /// The standard file name to look for user-defined configurations.
     public static let fileName = ".swiftlint.yml"
 
-    public let indentation: IndentationStyle           // style to use when indenting
-    public let included: [String]                      // included
-    public let excluded: [String]                      // excluded
-    public let reporter: String                        // reporter (xcode, json, csv, checkstyle)
-    public let warningThreshold: Int?                  // warning threshold
-    public private(set) var rootPath: String?          // the root path to search for nested configurations
-    public private(set) var configurationPath: String? // if successfully loaded from a path
+    /// The style to use when indenting Swift source code.
+    public let indentation: IndentationStyle
+    /// Included paths to lint.
+    public let included: [String]
+    /// Excluded paths to not lint.
+    public let excluded: [String]
+    /// The identifier for the `Reporter` to use to report style violations.
+    public let reporter: String
+    /// The threshold for the number of warnings to tolerate before treating the lint as having failed.
+    public let warningThreshold: Int?
+    /// The root directory to search for nested configurations.
+    public private(set) var rootPath: String?
+    /// The absolute path from where this configuration was loaded from, if any.
+    public private(set) var configurationPath: String?
+    /// The location of the persisted cache to use whith this configuration.
     public let cachePath: String?
+    /// Allow or disallow SwiftLint to exit successfully when passed only ignored or unlintable files
+    public let allowZeroLintableFiles: Bool
 
     public func hash(into hasher: inout Hasher) {
         if let configurationPath = configurationPath {
@@ -33,6 +50,7 @@ public struct Configuration: Hashable {
             hasher.combine(included)
             hasher.combine(excluded)
             hasher.combine(reporter)
+            hasher.combine(allowZeroLintableFiles)
         }
     }
 
@@ -45,13 +63,28 @@ public struct Configuration: Hashable {
 
     // MARK: Rules Properties
 
-    // All rules enabled in this configuration, derived from disabled, opt-in and whitelist rules
+    /// All rules enabled in this configuration, derived from disabled, opt-in and whitelist rules
     public let rules: [Rule]
 
     internal let rulesMode: RulesMode
 
     // MARK: Initializers
 
+    /// Creates a `Configuration` by specifying its properties directly.
+    ///
+    /// - parameter rulesMode:              The `RulesMode` for this configuration.
+    /// - parameter included:               Included paths to lint.
+    /// - parameter excluded:               Excluded paths to not lint.
+    /// - parameter warningThreshold:       The threshold for the number of warnings to tolerate before treating the
+    ///                                     lint as having failed.
+    /// - parameter reporter:               The identifier for the `Reporter` to use to report style violations.
+    /// - parameter ruleList:               All rules that should be accessible to this configuration.
+    /// - parameter configuredRules:        The rules with their own configurations already applied.
+    /// - parameter swiftlintVersion:       The SwiftLint version defined in this configuration.
+    /// - parameter cachePath:              The location of the persisted cache to use whith this configuration.
+    /// - parameter indentation:            The style to use when indenting Swift source code.
+    /// - parameter customRulesIdentifiers: All custom rule identifiers defined in the configuration.
+    /// - parameter allowZeroLintableFiles: Allow SwiftLint to exit successfully when passed ignored or unlintable files
     public init?(rulesMode: RulesMode = .default(disabled: [], optIn: []),
                  included: [String] = [],
                  excluded: [String] = [],
@@ -62,7 +95,8 @@ public struct Configuration: Hashable {
                  swiftlintVersion: String? = nil,
                  cachePath: String? = nil,
                  indentation: IndentationStyle = .default,
-                 customRulesIdentifiers: [String] = []) {
+                 customRulesIdentifiers: [String] = [],
+                 allowZeroLintableFiles: Bool = false) {
         if let pinnedVersion = swiftlintVersion, pinnedVersion != Version.current.value {
             queuedPrintError("Currently running SwiftLint \(Version.current.value) but " +
                 "configuration specified version \(pinnedVersion).")
@@ -89,7 +123,8 @@ public struct Configuration: Hashable {
                   reporter: reporter,
                   rules: rules,
                   cachePath: cachePath,
-                  indentation: indentation)
+                  indentation: indentation,
+                  allowZeroLintableFiles: allowZeroLintableFiles)
     }
 
     internal init(rulesMode: RulesMode,
@@ -100,18 +135,20 @@ public struct Configuration: Hashable {
                   rules: [Rule],
                   cachePath: String?,
                   rootPath: String? = nil,
-                  indentation: IndentationStyle) {
+                  indentation: IndentationStyle,
+                  allowZeroLintableFiles: Bool) {
         self.rulesMode = rulesMode
         self.included = included
         self.excluded = excluded
         self.reporter = reporter
         self.cachePath = cachePath
-        self.rules = rules
+        self.rules = rules.sorted { type(of: $0).description.identifier < type(of: $1).description.identifier }
         self.rootPath = rootPath
         self.indentation = indentation
 
         // set the config threshold to the threshold provided in the config file
         self.warningThreshold = warningThreshold
+        self.allowZeroLintableFiles = allowZeroLintableFiles
     }
 
     private init(_ configuration: Configuration) {
@@ -124,8 +161,19 @@ public struct Configuration: Hashable {
         cachePath = configuration.cachePath
         rootPath = configuration.rootPath
         indentation = configuration.indentation
+        allowZeroLintableFiles = configuration.allowZeroLintableFiles
     }
 
+    /// Creates a `Configuration` with convenience parameters.
+    ///
+    /// - parameter path:                   The path on disk to the configuration file.
+    /// - parameter rootPath:               The root directory to search for nested configurations.
+    /// - parameter optional:               If false, the initializer will trap if the file isn't found.
+    /// - parameter quiet:                  If false, a message will be logged to stderr when the configuration file is
+    ///                                     loaded.
+    /// - parameter enableAllRules:         Enable all available rules.
+    /// - parameter cachePath:              The location of the persisted cache to use whith this configuration.
+    /// - parameter customRulesIdentifiers: All custom rule identifiers defined in the configuration.
     public init(path: String = Configuration.fileName, rootPath: String? = nil,
                 optional: Bool = true, quiet: Bool = false, enableAllRules: Bool = false,
                 cachePath: String? = nil, customRulesIdentifiers: [String] = []) {
@@ -185,7 +233,8 @@ public struct Configuration: Hashable {
             (lhs.included == rhs.included) &&
             (lhs.excluded == rhs.excluded) &&
             (lhs.rules == rhs.rules) &&
-            (lhs.indentation == rhs.indentation)
+            (lhs.indentation == rhs.indentation) &&
+            (lhs.allowZeroLintableFiles == rhs.allowZeroLintableFiles)
     }
 }
 

@@ -15,9 +15,9 @@ public struct SwitchCaseAlignmentRule: ASTRule, ConfigurationProviderRule {
         triggeringExamples: Examples(indentedCases: false).triggeringExamples
     )
 
-    public func validate(file: File, kind: StatementKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
-        let contents = file.contents.bridge()
+    public func validate(file: SwiftLintFile, kind: StatementKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
+        let contents = file.stringView
 
         guard kind == .switch,
               let offset = dictionary.offset,
@@ -27,7 +27,7 @@ public struct SwitchCaseAlignmentRule: ASTRule, ConfigurationProviderRule {
 
         let caseStatements = dictionary.substructure.filter { subDict in
             // includes both `case` and `default` statements
-            return subDict.kind.flatMap(StatementKind.init) == .case
+            return subDict.statementKind == .case
         }
 
         if caseStatements.isEmpty {
@@ -82,27 +82,27 @@ extension SwitchCaseAlignmentRule {
             self.indentedCasesOption = indentedCases
         }
 
-        var triggeringExamples: [String] {
+        var triggeringExamples: [Example] {
             return (indentedCasesOption ? nonIndentedCases : indentedCases) + invalidCases
         }
 
-        var nonTriggeringExamples: [String] {
+        var nonTriggeringExamples: [Example] {
             return indentedCasesOption ? indentedCases : nonIndentedCases
         }
 
-        private var indentedCases: [String] {
+        private var indentedCases: [Example] {
             let violationMarker = indentedCasesOption ? "" : self.violationMarker
 
             return [
-                """
+                Example("""
                 switch someBool {
                     \(violationMarker)case true:
                         print("red")
                     \(violationMarker)case false:
                         print("blue")
                 }
-                """,
-                """
+                """),
+                Example("""
                 if aBool {
                     switch someBool {
                         \(violationMarker)case true:
@@ -111,8 +111,8 @@ extension SwitchCaseAlignmentRule {
                             print('blue')
                     }
                 }
-                """,
-                """
+                """),
+                Example("""
                 switch someInt {
                     \(violationMarker)case 0:
                         print('Zero')
@@ -121,15 +121,15 @@ extension SwitchCaseAlignmentRule {
                     \(violationMarker)default:
                         print('Some other number')
                 }
-                """
+                """)
             ]
         }
 
-        private var nonIndentedCases: [String] {
+        private var nonIndentedCases: [Example] {
             let violationMarker = indentedCasesOption ? self.violationMarker : ""
 
             return [
-                """
+                Example("""
                 switch someBool {
                 \(violationMarker)case true: // case 1
                     print('red')
@@ -144,8 +144,8 @@ extension SwitchCaseAlignmentRule {
                 enum SomeEnum {
                     case innocent
                 }
-                """,
-                """
+                """),
+                Example("""
                 if aBool {
                     switch someBool {
                     \(violationMarker)case true:
@@ -154,8 +154,8 @@ extension SwitchCaseAlignmentRule {
                         print('blue')
                     }
                 }
-                """,
-                """
+                """),
+                Example("""
                 switch someInt {
                 // comments ignored
                 \(violationMarker)case 0:
@@ -166,23 +166,23 @@ extension SwitchCaseAlignmentRule {
                 \(violationMarker)default:
                     print('Some other number')
                 }
-                """
+                """)
             ]
         }
 
-        private var invalidCases: [String] {
+        private var invalidCases: [Example] {
             let indentation = indentedCasesOption ? "    " : ""
 
             return [
-                """
+                Example("""
                 switch someBool {
                 \(indentation)case true:
                     \(indentation)print('red')
                     \(indentation)\(violationMarker)case false:
                         \(indentation)print('blue')
                 }
-                """,
-                """
+                """),
+                Example("""
                 if aBool {
                     switch someBool {
                         \(indentation)\(indentedCasesOption ? "" : violationMarker)case true:
@@ -191,7 +191,7 @@ extension SwitchCaseAlignmentRule {
                     \(indentation)print('blue')
                     }
                 }
-                """
+                """)
             ]
         }
     }

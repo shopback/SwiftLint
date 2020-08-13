@@ -12,26 +12,26 @@ public struct ClassDelegateProtocolRule: ASTRule, ConfigurationProviderRule, Aut
         description: "Delegate protocols should be class-only so they can be weakly referenced.",
         kind: .lint,
         nonTriggeringExamples: [
-            "protocol FooDelegate: class {}\n",
-            "protocol FooDelegate: class, BarDelegate {}\n",
-            "protocol Foo {}\n",
-            "class FooDelegate {}\n",
-            "@objc protocol FooDelegate {}\n",
-            "@objc(MyFooDelegate)\n protocol FooDelegate {}\n",
-            "protocol FooDelegate: BarDelegate {}\n",
-            "protocol FooDelegate: AnyObject {}\n",
-            "protocol FooDelegate: NSObjectProtocol {}\n"
+            Example("protocol FooDelegate: class {}\n"),
+            Example("protocol FooDelegate: class, BarDelegate {}\n"),
+            Example("protocol Foo {}\n"),
+            Example("class FooDelegate {}\n"),
+            Example("@objc protocol FooDelegate {}\n"),
+            Example("@objc(MyFooDelegate)\n protocol FooDelegate {}\n"),
+            Example("protocol FooDelegate: BarDelegate {}\n"),
+            Example("protocol FooDelegate: AnyObject {}\n"),
+            Example("protocol FooDelegate: NSObjectProtocol {}\n")
         ],
         triggeringExamples: [
-            "↓protocol FooDelegate {}\n",
-            "↓protocol FooDelegate: Bar {}\n"
+            Example("↓protocol FooDelegate {}\n"),
+            Example("↓protocol FooDelegate: Bar {}\n")
         ]
     )
 
     private let referenceTypeProtocols: Set = ["AnyObject", "NSObjectProtocol", "class"]
 
-    public func validate(file: File, kind: SwiftDeclarationKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftDeclarationKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard kind == .protocol else {
             return []
         }
@@ -49,12 +49,12 @@ public struct ClassDelegateProtocolRule: ASTRule, ConfigurationProviderRule, Aut
         }
 
         // Check if inherits from another Delegate protocol
-        guard dictionary.inheritedTypes.filter(isDelegateProtocol).isEmpty else {
+        guard !dictionary.inheritedTypes.contains(where: isDelegateProtocol) else {
             return []
         }
 
         // Check if inherits from a known reference type protocol
-        guard dictionary.inheritedTypes.filter(isReferenceTypeProtocol).isEmpty else {
+        guard !dictionary.inheritedTypes.contains(where: isReferenceTypeProtocol) else {
             return []
         }
 
@@ -63,21 +63,23 @@ public struct ClassDelegateProtocolRule: ASTRule, ConfigurationProviderRule, Aut
             let nameOffset = dictionary.nameOffset,
             let nameLength = dictionary.nameLength,
             let bodyOffset = dictionary.bodyOffset,
-            case let contents = file.contents.bridge(),
+            case let contents = file.stringView,
             case let start = nameOffset + nameLength,
-            let range = contents.byteRangeToNSRange(start: start, length: bodyOffset - start),
-            !isClassProtocol(file: file, range: range) else {
+            case let byteRange = ByteRange(location: start, length: bodyOffset - start),
+            let range = contents.byteRangeToNSRange(byteRange),
+            !isClassProtocol(file: file, range: range)
+        else {
             return []
         }
 
         return [
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, byteOffset: offset))
         ]
     }
 
-    private func isClassProtocol(file: File, range: NSRange) -> Bool {
+    private func isClassProtocol(file: SwiftLintFile, range: NSRange) -> Bool {
         return !file.match(pattern: "\\bclass\\b", with: [.keyword], range: range).isEmpty
     }
 

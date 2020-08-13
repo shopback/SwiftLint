@@ -12,27 +12,27 @@ public struct StaticOperatorRule: ASTRule, ConfigurationProviderRule, OptInRule,
         description: "Operators should be declared as static functions, not free functions.",
         kind: .idiomatic,
         nonTriggeringExamples: [
-            """
+            Example("""
             class A: Equatable {
               static func == (lhs: A, rhs: A) -> Bool {
                 return false
               }
-            """,
-            """
+            """),
+            Example("""
             class A<T>: Equatable {
                 static func == <T>(lhs: A<T>, rhs: A<T>) -> Bool {
                     return false
                 }
-            """,
-            """
+            """),
+            Example("""
             public extension Array where Element == Rule {
               static func == (lhs: Array, rhs: Array) -> Bool {
                 if lhs.count != rhs.count { return false }
                 return !zip(lhs, rhs).contains { !$0.0.isEqualTo($0.1) }
               }
             }
-            """,
-            """
+            """),
+            Example("""
             private extension Optional where Wrapped: Comparable {
               static func < (lhs: Optional, rhs: Optional) -> Bool {
                 switch (lhs, rhs) {
@@ -45,26 +45,26 @@ public struct StaticOperatorRule: ASTRule, ConfigurationProviderRule, OptInRule,
                 }
               }
             }
-            """
+            """)
         ],
         triggeringExamples: [
-            """
+            Example("""
             ↓func == (lhs: A, rhs: A) -> Bool {
               return false
             }
-            """,
-            """
+            """),
+            Example("""
             ↓func == <T>(lhs: A<T>, rhs: A<T>) -> Bool {
               return false
             }
-            """,
-            """
+            """),
+            Example("""
             ↓func == (lhs: [Rule], rhs: [Rule]) -> Bool {
               if lhs.count != rhs.count { return false }
               return !zip(lhs, rhs).contains { !$0.0.isEqualTo($0.1) }
             }
-            """,
-            """
+            """),
+            Example("""
             private ↓func < <T: Comparable>(lhs: T?, rhs: T?) -> Bool {
               switch (lhs, rhs) {
               case let (lhs?, rhs?):
@@ -75,12 +75,12 @@ public struct StaticOperatorRule: ASTRule, ConfigurationProviderRule, OptInRule,
                 return false
               }
             }
-            """
+            """)
         ]
     )
 
-    public func validate(file: File, kind: SwiftDeclarationKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftDeclarationKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard kind == .functionFree,
             let offset = dictionary.offset,
             let name = dictionary.name?.split(separator: "(").first.flatMap(String.init) else {
@@ -93,7 +93,7 @@ public struct StaticOperatorRule: ASTRule, ConfigurationProviderRule, OptInRule,
         }
 
         return [
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, byteOffset: offset))
         ]

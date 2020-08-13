@@ -13,32 +13,54 @@ public struct DiscardedNotificationCenterObserverRule: ASTRule, ConfigurationPro
                      "returned should be stored so it can be removed later.",
         kind: .lint,
         nonTriggeringExamples: [
-            "let foo = nc.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: nil) { }\n",
-            "let foo = nc.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: nil, using: { })\n",
-            "func foo() -> Any {\n" +
+            Example("let foo = nc.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: nil) { }\n"),
+            Example("""
+            let foo = nc.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: nil, using: { })
+            """),
+            Example("func foo() -> Any {\n" +
             "   return nc.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: nil, using: { })\n" +
-            "}\n"
+            "}\n"),
+            Example("var obs: [Any?] = []\n" +
+            "obs.append(nc.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: nil, using: { }))\n"),
+            Example("""
+            var obs: [String: Any?] = []
+            obs["foo"] = nc.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: nil, using: { })
+            """),
+            Example("var obs: [Any?] = []\n" +
+            "obs.append(nc.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: nil, using: { }))\n"),
+            Example("func foo(_ notif: Any) {\n" +
+            "   obs.append(notif)\n" +
+            "}\n" +
+            "foo(nc.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: nil, using: { }))\n"),
+            Example("""
+            var obs: [NSObjectProtocol] = [
+               nc.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: nil, using: { }),
+               nc.addObserver(forName: .CKAccountChanged, object: nil, queue: nil, using: { })
+            ]
+            """)
         ],
         triggeringExamples: [
-            "↓nc.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: nil) { }\n",
-            "↓nc.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: nil, using: { })\n",
-            "@discardableResult func foo() -> Any {\n" +
-            "   return ↓nc.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: nil, using: { })\n" +
-            "}\n"
+            Example("↓nc.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: nil) { }\n"),
+            Example("↓nc.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: nil, using: { })\n"),
+            Example("""
+            @discardableResult func foo() -> Any {
+               return ↓nc.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: nil, using: { })
+            }
+            """)
         ]
     )
 
-    public func validate(file: File, kind: SwiftExpressionKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftExpressionKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         return violationOffsets(in: file, dictionary: dictionary, kind: kind).map { location in
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, byteOffset: location))
         }
     }
 
-    private func violationOffsets(in file: File, dictionary: [String: SourceKitRepresentable],
-                                  kind: SwiftExpressionKind) -> [Int] {
+    private func violationOffsets(in file: SwiftLintFile, dictionary: SourceKittenDictionary,
+                                  kind: SwiftExpressionKind) -> [ByteCount] {
         guard kind == .call,
             let name = dictionary.name,
             name.hasSuffix(".addObserver"),
@@ -47,8 +69,13 @@ public struct DiscardedNotificationCenterObserverRule: ASTRule, ConfigurationPro
             argumentsNames == ["forName", "object", "queue"] ||
                 argumentsNames == ["forName", "object", "queue", "using"],
             let offset = dictionary.offset,
-            let range = file.contents.bridge().byteRangeToNSRange(start: 0, length: offset) else {
+            let range = file.stringView.byteRangeToNSRange(ByteRange(location: 0, length: offset)) else {
                 return []
+        }
+
+        if let lastMatch = regex("\\b[^\\(]+").matches(in: file.contents, options: [], range: range).last?.range,
+            lastMatch.location == range.length - lastMatch.length - 1 {
+            return []
         }
 
         if let lastMatch = regex("\\s?=\\s*").matches(in: file.contents, options: [], range: range).last?.range,
@@ -58,8 +85,13 @@ public struct DiscardedNotificationCenterObserverRule: ASTRule, ConfigurationPro
 
         if let lastMatch = file.match(pattern: "\\breturn\\s+", with: [.keyword], range: range).last,
             lastMatch.location == range.length - lastMatch.length,
-            let lastFunction = file.structure.functions(forByteOffset: offset).last,
+            let lastFunction = file.structureDictionary.functions(forByteOffset: offset).last,
             !lastFunction.enclosedSwiftAttributes.contains(.discardableResult) {
+            return []
+        }
+
+        let kinds = file.structureDictionary.kinds(forByteOffset: offset)
+        if kinds.count >= 2 && SwiftExpressionKind(rawValue: kinds[kinds.count - 2].0) == .array {
             return []
         }
 
@@ -67,24 +99,9 @@ public struct DiscardedNotificationCenterObserverRule: ASTRule, ConfigurationPro
     }
 }
 
-private extension Structure {
-    func functions(forByteOffset byteOffset: Int) -> [[String: SourceKitRepresentable]] {
-        var results = [[String: SourceKitRepresentable]]()
-
-        func parse(_ dictionary: [String: SourceKitRepresentable]) {
-            guard let offset = dictionary.offset,
-                let byteRange = dictionary.length.map({ NSRange(location: offset, length: $0) }),
-                NSLocationInRange(byteOffset, byteRange) else {
-                    return
-            }
-
-            if let kind = dictionary.kind.flatMap(SwiftDeclarationKind.init),
-                SwiftDeclarationKind.functionKinds.contains(kind) {
-                results.append(dictionary)
-            }
-            dictionary.substructure.forEach(parse)
-        }
-        parse(dictionary)
-        return results
+private extension SourceKittenDictionary {
+    func functions(forByteOffset byteOffset: ByteCount) -> [SourceKittenDictionary] {
+        return structures(forByteOffset: byteOffset)
+            .filter { $0.declarationKind.map(SwiftDeclarationKind.functionKinds.contains) == true }
     }
 }

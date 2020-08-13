@@ -12,93 +12,93 @@ public struct ExplicitSelfRule: CorrectableRule, ConfigurationProviderRule, Anal
         description: "Instance variables and functions should be explicitly accessed with 'self.'.",
         kind: .style,
         nonTriggeringExamples: [
-            """
+            Example("""
             struct A {
                 func f1() {}
                 func f2() {
                     self.f1()
                 }
             }
-            """,
-            """
+            """),
+            Example("""
             struct A {
                 let p1: Int
                 func f1() {
                     _ = self.p1
                 }
             }
-            """
+            """)
         ],
         triggeringExamples: [
-            """
+            Example("""
             struct A {
                 func f1() {}
                 func f2() {
                     ↓f1()
                 }
             }
-            """,
-            """
+            """),
+            Example("""
             struct A {
                 let p1: Int
                 func f1() {
                     _ = ↓p1
                 }
             }
-            """
+            """)
         ],
         corrections: [
-            """
+            Example("""
             struct A {
                 func f1() {}
                 func f2() {
                     ↓f1()
                 }
             }
-            """:
-            """
+            """):
+            Example("""
             struct A {
                 func f1() {}
                 func f2() {
                     self.f1()
                 }
             }
-            """,
-            """
+            """),
+            Example("""
             struct A {
                 let p1: Int
                 func f1() {
                     _ = ↓p1
                 }
             }
-            """:
-            """
+            """):
+            Example("""
             struct A {
                 let p1: Int
                 func f1() {
                     _ = self.p1
                 }
             }
-            """
+            """)
         ],
         requiresFileOnDisk: true
     )
 
-    public func validate(file: File, compilerArguments: [String]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, compilerArguments: [String]) -> [StyleViolation] {
         return violationRanges(in: file, compilerArguments: compilerArguments).map {
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, characterOffset: $0.location))
         }
     }
 
-    public func correct(file: File, compilerArguments: [String]) -> [Correction] {
+    public func correct(file: SwiftLintFile, compilerArguments: [String]) -> [Correction] {
         let violations = violationRanges(in: file, compilerArguments: compilerArguments)
         let matches = file.ruleEnabled(violatingRanges: violations, for: self)
         if matches.isEmpty { return [] }
 
         var contents = file.contents.bridge()
-        let description = type(of: self).description
+        let description = Self.description
         var corrections = [Correction]()
         for range in matches.reversed() {
             contents = contents.replacingCharacters(in: range, with: "self.").bridge()
@@ -109,11 +109,11 @@ public struct ExplicitSelfRule: CorrectableRule, ConfigurationProviderRule, Anal
         return corrections
     }
 
-    private func violationRanges(in file: File, compilerArguments: [String]) -> [NSRange] {
+    private func violationRanges(in file: SwiftLintFile, compilerArguments: [String]) -> [NSRange] {
         guard !compilerArguments.isEmpty else {
             queuedPrintError("""
                 Attempted to lint file at path '\(file.path ?? "...")' with the \
-                \(type(of: self).description.identifier) rule without any compiler arguments.
+                \(Self.description.identifier) rule without any compiler arguments.
                 """)
             return []
         }
@@ -137,15 +137,15 @@ public struct ExplicitSelfRule: CorrectableRule, ConfigurationProviderRule, Anal
             return []
         }
 
-        let contents = file.contents.bridge()
+        let contents = file.stringView
 
         return cursorsMissingExplicitSelf.compactMap { cursorInfo in
-            guard let byteOffset = cursorInfo["swiftlint.offset"] as? Int64 else {
+            guard let byteOffset = (cursorInfo["swiftlint.offset"] as? Int64).flatMap(ByteCount.init) else {
                 queuedPrintError("couldn't convert offsets")
                 return nil
             }
 
-            return contents.byteRangeToNSRange(start: Int(byteOffset), length: 0)
+            return contents.byteRangeToNSRange(ByteRange(location: byteOffset, length: 0))
         }
     }
 }
@@ -155,30 +155,27 @@ private let kindsToFind: Set = [
     "source.lang.swift.ref.var.instance"
 ]
 
-private extension File {
-    func allCursorInfo(compilerArguments: [String], atByteOffsets byteOffsets: [Int]) throws
+private extension SwiftLintFile {
+    func allCursorInfo(compilerArguments: [String], atByteOffsets byteOffsets: [ByteCount]) throws
         -> [[String: SourceKitRepresentable]] {
         return try byteOffsets.compactMap { offset in
-            if contents.bridge().substringWithByteRange(start: offset - 1, length: 1)! == "." { return nil }
-            var cursorInfo = try Request.cursorInfo(file: self.path!, offset: Int64(offset),
+            if stringView.substringWithByteRange(ByteRange(location: offset - 1, length: 1))! == "." { return nil }
+            var cursorInfo = try Request.cursorInfo(file: self.path!, offset: offset,
                                                     arguments: compilerArguments).sendIfNotDisabled()
-            cursorInfo["swiftlint.offset"] = Int64(offset)
+            cursorInfo["swiftlint.offset"] = Int64(offset.value)
             return cursorInfo
         }
     }
 }
 
-private extension NSString {
-    func byteOffset(forLine line: Int, column: Int) -> Int {
-        var byteOffset = 0
-        for line in lines()[..<(line - 1)] {
-            byteOffset += line.byteRange.length
-        }
-        return byteOffset + column - 1
+private extension StringView {
+    func byteOffset(forLine line: Int, column: Int) -> ByteCount {
+        guard line > 0 else { return ByteCount(column - 1) }
+        return lines[line - 1].byteRange.location + ByteCount(column - 1)
     }
 
-    func recursiveByteOffsets(_ dict: [String: Any]) -> [Int] {
-        let cur: [Int]
+    func recursiveByteOffsets(_ dict: [String: Any]) -> [ByteCount] {
+        let cur: [ByteCount]
         if let line = dict["key.line"] as? Int64,
             let column = dict["key.column"] as? Int64,
             let kindString = dict["key.kind"] as? String,
@@ -194,9 +191,9 @@ private extension NSString {
     }
 }
 
-private func binaryOffsets(file: File, compilerArguments: [String]) throws -> [Int] {
+private func binaryOffsets(file: SwiftLintFile, compilerArguments: [String]) throws -> [ByteCount] {
     let absoluteFile = file.path!.bridge().absolutePathRepresentation()
     let index = try Request.index(file: absoluteFile, arguments: compilerArguments).sendIfNotDisabled()
-    let binaryOffsets = file.contents.bridge().recursiveByteOffsets(index)
+    let binaryOffsets = file.stringView.recursiveByteOffsets(index)
     return binaryOffsets.sorted()
 }

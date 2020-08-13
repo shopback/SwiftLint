@@ -1,4 +1,3 @@
-import Foundation
 import SourceKittenFramework
 
 public struct NotificationCenterDetachmentRule: ASTRule, ConfigurationProviderRule, AutomaticTestableRule {
@@ -15,29 +14,29 @@ public struct NotificationCenterDetachmentRule: ASTRule, ConfigurationProviderRu
         triggeringExamples: NotificationCenterDetachmentRuleExamples.triggeringExamples
     )
 
-    public func validate(file: File, kind: SwiftDeclarationKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftDeclarationKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard kind == .class else {
             return []
         }
 
         return violationOffsets(file: file, dictionary: dictionary).map { offset in
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, byteOffset: offset))
         }
     }
 
-    private func violationOffsets(file: File,
-                                  dictionary: [String: SourceKitRepresentable]) -> [Int] {
-        return dictionary.substructure.flatMap { subDict -> [Int] in
+    private func violationOffsets(file: SwiftLintFile,
+                                  dictionary: SourceKittenDictionary) -> [ByteCount] {
+        return dictionary.substructure.flatMap { subDict -> [ByteCount] in
             // complete detachment is allowed on `deinit`
-            if subDict.kind.flatMap(SwiftDeclarationKind.init) == .functionMethodInstance,
+            if subDict.declarationKind == .functionMethodInstance,
                 subDict.name == "deinit" {
                 return []
             }
 
-            if subDict.kind.flatMap(SwiftExpressionKind.init(rawValue:)) == .call,
+            if subDict.expressionKind == .call,
                 subDict.name == methodName,
                 parameterIsSelf(dictionary: subDict, file: file),
                 let offset = subDict.offset {
@@ -50,21 +49,16 @@ public struct NotificationCenterDetachmentRule: ASTRule, ConfigurationProviderRu
 
     private var methodName = "NotificationCenter.default.removeObserver"
 
-    private func parameterIsSelf(dictionary: [String: SourceKitRepresentable], file: File) -> Bool {
-        guard let bodyOffset = dictionary.bodyOffset,
-            let bodyLength = dictionary.bodyLength else {
-                return false
-        }
-
-        let range = NSRange(location: bodyOffset, length: bodyLength)
-        let tokens = file.syntaxMap.tokens(inByteRange: range)
-        let types = tokens.kinds
-
-        guard types == [.keyword], let token = tokens.first else {
+    private func parameterIsSelf(dictionary: SourceKittenDictionary, file: SwiftLintFile) -> Bool {
+        guard let bodyRange = dictionary.bodyByteRange,
+            case let tokens = file.syntaxMap.tokens(inByteRange: bodyRange),
+            tokens.kinds == [.keyword],
+            let token = tokens.first
+        else {
             return false
         }
 
-        let body = file.contents.bridge().substringWithByteRange(start: token.offset, length: token.length)
+        let body = file.contents(for: token)
         return body == "self"
     }
 }

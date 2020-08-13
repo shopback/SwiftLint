@@ -3,14 +3,55 @@ import SourceKittenFramework
 
 private let whitespaceAndNewlineCharacterSet = CharacterSet.whitespacesAndNewlines
 
-private extension File {
+private extension SwiftLintFile {
     func violatingOpeningBraceRanges() -> [(range: NSRange, location: Int)] {
         return match(pattern: "(?:[^( ]|[\\s(][\\s]+)\\{",
                      excludingSyntaxKinds: SyntaxKind.commentAndStringKinds,
-                     excludingPattern: "(?:if|guard|while)\\n[^\\{]+?[\\s\\t\\n]\\{").map {
+                     excludingPattern: "(?:(?:if|guard|while)\\n[^\\{]+?\\s|\\{\\s*)\\{").compactMap {
+            if isAnonimousClosure(range: $0) {
+                return nil
+            }
             let branceRange = contents.bridge().range(of: "{", options: .literal, range: $0)
             return ($0, branceRange.location)
         }
+    }
+
+    func isAnonimousClosure(range: NSRange) -> Bool {
+        let contentsBridge = contents.bridge()
+        guard range.location != NSNotFound else {
+            return false
+        }
+        let closureCode = contentsBridge.substring(from: range.location)
+        guard let closingBracketPosition = closingBracket(closureCode) else {
+            return false
+        }
+        let lengthAfterClosingBracket = closureCode.count - closingBracketPosition - 1
+        if lengthAfterClosingBracket <= 0 {
+            return false
+        }
+
+        //First non-whitespace character should be "(" - otherwise it is not an anonymous closure
+        let afterBracketCode = closureCode.substring(from: closingBracketPosition + 1)
+                                            .trimmingCharacters(in: .whitespaces)
+        return afterBracketCode.first == "("
+    }
+
+    func closingBracket(_ closureCode: String) -> Int? {
+        var bracketCount = 0
+        var location = 0
+        for letter in closureCode {
+            if letter == "{" {
+                bracketCount += 1
+            } else if letter == "}" {
+                if bracketCount == 1 {
+                    // The closing bracket found
+                    return location
+                }
+                bracketCount -= 1
+            }
+            location += 1
+        }
+        return nil
     }
 }
 
@@ -26,56 +67,103 @@ public struct OpeningBraceRule: CorrectableRule, ConfigurationProviderRule, Auto
                      "as the declaration.",
         kind: .style,
         nonTriggeringExamples: [
-            "func abc() {\n}",
-            "[].map() { $0 }",
-            "[].map({ })",
-            "if let a = b { }",
-            "while a == b { }",
-            "guard let a = b else { }",
-            "if\n\tlet a = b,\n\tlet c = d\n\twhere a == c\n{ }",
-            "while\n\tlet a = b,\n\tlet c = d\n\twhere a == c\n{ }",
-            "guard\n\tlet a = b,\n\tlet c = d\n\twhere a == c else\n{ }",
-            "struct Rule {}\n",
-            "struct Parent {\n\tstruct Child {\n\t\tlet foo: Int\n\t}\n}\n"
+            Example("func abc() {\n}"),
+            Example("[].map() { $0 }"),
+            Example("[].map({ })"),
+            Example("if let a = b { }"),
+            Example("while a == b { }"),
+            Example("guard let a = b else { }"),
+            Example("if\n\tlet a = b,\n\tlet c = d\n\twhere a == c\n{ }"),
+            Example("while\n\tlet a = b,\n\tlet c = d\n\twhere a == c\n{ }"),
+            Example("guard\n\tlet a = b,\n\tlet c = d\n\twhere a == c else\n{ }"),
+            Example("struct Rule {}\n"),
+            Example("struct Parent {\n\tstruct Child {\n\t\tlet foo: Int\n\t}\n}\n"),
+            Example("""
+                    func f(rect: CGRect) {
+                        {
+                            let centre = CGPoint(x: rect.midX, y: rect.midY)
+                            print(centre)
+                        }()
+                    }
+                    """),
+            Example("""
+                    func f(rect: CGRect) -> () -> Void {
+                        {
+                            let centre = CGPoint(x: rect.midX, y: rect.midY)
+                            print(centre)
+                        }
+                    }
+                    """),
+            Example("""
+                    func f() -> () -> Void {
+                        {}
+                    }
+                    """)
         ],
         triggeringExamples: [
-            "func abc()↓{\n}",
-            "func abc()\n\t↓{ }",
-            "[].map()↓{ $0 }",
-            "[].map( ↓{ } )",
-            "if let a = b↓{ }",
-            "while a == b↓{ }",
-            "guard let a = b else↓{ }",
-            "if\n\tlet a = b,\n\tlet c = d\n\twhere a == c↓{ }",
-            "while\n\tlet a = b,\n\tlet c = d\n\twhere a == c↓{ }",
-            "guard\n\tlet a = b,\n\tlet c = d\n\twhere a == c else↓{ }",
-            "struct Rule↓{}\n",
-            "struct Rule\n↓{\n}\n",
-            "struct Rule\n\n\t↓{\n}\n",
-            "struct Parent {\n\tstruct Child\n\t↓{\n\t\tlet foo: Int\n\t}\n}\n"
+            Example("func abc()↓{\n}"),
+            Example("func abc()\n\t↓{ }"),
+            Example("[].map()↓{ $0 }"),
+            Example("[].map( ↓{ } )"),
+            Example("if let a = b↓{ }"),
+            Example("while a == b↓{ }"),
+            Example("guard let a = b else↓{ }"),
+            Example("if\n\tlet a = b,\n\tlet c = d\n\twhere a == c↓{ }"),
+            Example("while\n\tlet a = b,\n\tlet c = d\n\twhere a == c↓{ }"),
+            Example("guard\n\tlet a = b,\n\tlet c = d\n\twhere a == c else↓{ }"),
+            Example("struct Rule↓{}\n"),
+            Example("struct Rule\n↓{\n}\n"),
+            Example("struct Rule\n\n\t↓{\n}\n"),
+            Example("struct Parent {\n\tstruct Child\n\t↓{\n\t\tlet foo: Int\n\t}\n}\n"),
+            Example("""
+            // Get the current thread's TLS pointer. On first call for a given thread,
+            // creates and initializes a new one.
+            internal static func getPointer()
+              -> UnsafeMutablePointer<_ThreadLocalStorage>
+            { // <- here
+              return _swift_stdlib_threadLocalStorageGet().assumingMemoryBound(
+                to: _ThreadLocalStorage.self)
+            }
+            """),
+            Example("""
+            func run_Array_method1x(_ N: Int) {
+              let existentialArray = array!
+              for _ in 0 ..< N * 100 {
+                for elt in existentialArray {
+                  if !elt.doIt()  {
+                    fatalError("expected true")
+                  }
+                }
+              }
+            }
+
+            func run_Array_method2x(_ N: Int) {
+
+            }
+            """)
         ],
         corrections: [
-            "struct Rule↓{}\n": "struct Rule {}\n",
-            "struct Rule\n↓{\n}\n": "struct Rule {\n}\n",
-            "struct Rule\n\n\t↓{\n}\n": "struct Rule {\n}\n",
-            "struct Parent {\n\tstruct Child\n\t↓{\n\t\tlet foo: Int\n\t}\n}\n":
-                "struct Parent {\n\tstruct Child {\n\t\tlet foo: Int\n\t}\n}\n",
-            "[].map()↓{ $0 }\n": "[].map() { $0 }\n",
-            "[].map( ↓{ })\n": "[].map({ })\n",
-            "if a == b↓{ }\n": "if a == b { }\n",
-            "if\n\tlet a = b,\n\tlet c = d↓{ }\n": "if\n\tlet a = b,\n\tlet c = d { }\n"
+            Example("struct Rule↓{}\n"): Example("struct Rule {}\n"),
+            Example("struct Rule\n↓{\n}\n"): Example("struct Rule {\n}\n"),
+            Example("struct Rule\n\n\t↓{\n}\n"): Example("struct Rule {\n}\n"),
+            Example("struct Parent {\n\tstruct Child\n\t↓{\n\t\tlet foo: Int\n\t}\n}\n"):
+                Example("struct Parent {\n\tstruct Child {\n\t\tlet foo: Int\n\t}\n}\n"),
+            Example("[].map()↓{ $0 }\n"): Example("[].map() { $0 }\n"),
+            Example("[].map( ↓{ })\n"): Example("[].map({ })\n"),
+            Example("if a == b↓{ }\n"): Example("if a == b { }\n"),
+            Example("if\n\tlet a = b,\n\tlet c = d↓{ }\n"): Example("if\n\tlet a = b,\n\tlet c = d { }\n")
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         return file.violatingOpeningBraceRanges().map {
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, characterOffset: $0.location))
         }
     }
 
-    public func correct(file: File) -> [Correction] {
+    public func correct(file: SwiftLintFile) -> [Correction] {
         let violatingRanges = file.violatingOpeningBraceRanges().filter {
             !file.ruleEnabled(violatingRanges: [$0.range], for: self).isEmpty
         }
@@ -90,7 +178,7 @@ public struct OpeningBraceRule: CorrectableRule, ConfigurationProviderRule, Auto
         file.write(correctedContents)
 
         return adjustedLocations.map {
-            Correction(ruleDescription: type(of: self).description,
+            Correction(ruleDescription: Self.description,
                        location: $0)
         }
     }

@@ -23,16 +23,16 @@ public struct ColonRule: CorrectableRule, ConfigurationProviderRule {
         corrections: ColonRuleExamples.corrections
     )
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         let violations = typeColonViolationRanges(in: file, matching: pattern).compactMap { range in
-            return StyleViolation(ruleDescription: type(of: self).description,
+            return StyleViolation(ruleDescription: Self.description,
                                   severity: configuration.severityConfiguration.severity,
                                   location: Location(file: file, characterOffset: range.location))
         }
 
         let dictionaryViolations: [StyleViolation]
         if configuration.applyToDictionaries {
-            dictionaryViolations = validate(file: file, dictionary: file.structure.dictionary)
+            dictionaryViolations = validate(file: file, dictionary: file.structureDictionary)
         } else {
             dictionaryViolations = []
         }
@@ -40,7 +40,7 @@ public struct ColonRule: CorrectableRule, ConfigurationProviderRule {
         return (violations + dictionaryViolations).sorted { $0.location < $1.location }
     }
 
-    public func correct(file: File) -> [Correction] {
+    public func correct(file: SwiftLintFile) -> [Correction] {
         let violations = correctionRanges(in: file)
         let matches = violations.filter {
             !file.ruleEnabled(violatingRanges: [$0.range], for: self).isEmpty
@@ -48,7 +48,7 @@ public struct ColonRule: CorrectableRule, ConfigurationProviderRule {
 
         guard !matches.isEmpty else { return [] }
         let regularExpression = regex(pattern)
-        let description = type(of: self).description
+        let description = Self.description
         var corrections = [Correction]()
         var contents = file.contents
         for (range, kind) in matches.reversed() {
@@ -71,25 +71,19 @@ public struct ColonRule: CorrectableRule, ConfigurationProviderRule {
 
     private typealias RangeWithKind = (range: NSRange, kind: ColonKind)
 
-    private func correctionRanges(in file: File) -> [RangeWithKind] {
+    private func correctionRanges(in file: SwiftLintFile) -> [RangeWithKind] {
         let violations: [RangeWithKind] = typeColonViolationRanges(in: file, matching: pattern).map {
             (range: $0, kind: ColonKind.type)
         }
-        let dictionary = file.structure.dictionary
-        let contents = file.contents.bridge()
+        let dictionary = file.structureDictionary
+        let contents = file.stringView
         let dictViolations: [RangeWithKind] = dictionaryColonViolationRanges(in: file,
                                                                              dictionary: dictionary).compactMap {
-            guard let range = contents.byteRangeToNSRange(start: $0.location, length: $0.length) else {
-                return nil
-            }
-            return (range: range, kind: .dictionary)
+            return contents.byteRangeToNSRange($0).map { (range: $0, kind: .dictionary) }
         }
         let functionViolations: [RangeWithKind] = functionCallColonViolationRanges(in: file,
                                                                                    dictionary: dictionary).compactMap {
-            guard let range = contents.byteRangeToNSRange(start: $0.location, length: $0.length) else {
-                return nil
-            }
-            return (range: range, kind: .functionCall)
+            return contents.byteRangeToNSRange($0).map { (range: $0, kind: .functionCall) }
         }
 
         return (violations + dictViolations + functionViolations).sorted {
@@ -99,14 +93,20 @@ public struct ColonRule: CorrectableRule, ConfigurationProviderRule {
 }
 
 extension ColonRule: ASTRule {
-    /// Only returns dictionary and function calls colon violations
-    public func validate(file: File, kind: SwiftExpressionKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    /// Only returns dictionary and function calls colon violations.
+    ///
+    /// - parameter file:       The file to validate.
+    /// - parameter kind:       The expression kind to parse.
+    /// - parameter dictionary: The substructure to validate.
+    ///
+    /// - returns: Colon rule style violations in dictionaries and function calls.
+    public func validate(file: SwiftLintFile, kind: SwiftExpressionKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         let ranges = dictionaryColonViolationRanges(in: file, kind: kind, dictionary: dictionary) +
             functionCallColonViolationRanges(in: file, kind: kind, dictionary: dictionary)
 
         return ranges.map {
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severityConfiguration.severity,
                            location: Location(file: file, byteOffset: $0.location))
         }

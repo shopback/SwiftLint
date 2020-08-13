@@ -14,8 +14,8 @@ public struct CollectionAlignmentRule: ASTRule, ConfigurationProviderRule, OptIn
         triggeringExamples: Examples(alignColons: false).triggeringExamples
     )
 
-    public func validate(file: File, kind: SwiftExpressionKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftExpressionKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard kind == .dictionary || kind == .array else { return [] }
 
         let keyLocations: [Location]
@@ -45,25 +45,25 @@ public struct CollectionAlignmentRule: ASTRule, ConfigurationProviderRule, OptIn
             }
 
         return violationLocations.map {
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severityConfiguration.severity,
                            location: $0)
         }
     }
 
-    private func arrayElementLocations(with file: File, dictionary: [String: SourceKitRepresentable]) -> [Location] {
+    private func arrayElementLocations(with file: SwiftLintFile, dictionary: SourceKittenDictionary) -> [Location] {
         return dictionary.elements.compactMap { element -> Location? in
             element.offset.map { Location(file: file, byteOffset: $0) }
         }
     }
 
-    private func dictionaryKeyLocations(with file: File,
-                                        dictionary: [String: SourceKitRepresentable]) -> [Location] {
-        var keys: [[String: SourceKitRepresentable]] = []
-        var values: [[String: SourceKitRepresentable]] = []
+    private func dictionaryKeyLocations(with file: SwiftLintFile,
+                                        dictionary: SourceKittenDictionary) -> [Location] {
+        var keys: [SourceKittenDictionary] = []
+        var values: [SourceKittenDictionary] = []
         dictionary.elements.enumerated().forEach { index, element in
             // in a dictionary, the even elements are keys, and the odd elements are values
-            if index % 2 == 0 {
+            if index.isMultiple(of: 2) {
                 keys.append(element)
             } else {
                 values.append(element)
@@ -86,11 +86,13 @@ public struct CollectionAlignmentRule: ASTRule, ConfigurationProviderRule, OptIn
         }
     }
 
-    private func colonLocation(with file: File, keyOffset: Int, keyLength: Int, valueOffset: Int) -> Location? {
-        let contents = file.contents.bridge()
+    private func colonLocation(with file: SwiftLintFile, keyOffset: ByteCount, keyLength: ByteCount,
+                               valueOffset: ByteCount) -> Location? {
+        let contents = file.stringView
         let matchStart = keyOffset + keyLength
         let matchLength = valueOffset - matchStart
-        let range = contents.byteRangeToNSRange(start: matchStart, length: matchLength)
+        let byteRange = ByteRange(location: matchStart, length: matchLength)
+        let range = contents.byteRangeToNSRange(byteRange)
 
         let matches = file.match(pattern: ":", excludingSyntaxKinds: [.comment], range: range)
         return matches.first.map { Location(file: file, characterOffset: $0.location) }
@@ -105,27 +107,27 @@ extension CollectionAlignmentRule {
             self.alignColons = alignColons
         }
 
-        var triggeringExamples: [String] {
+        var triggeringExamples: [Example] {
             let examples = alignColons ? alignColonsTriggeringExamples : alignLeftTriggeringExamples
             return examples + sharedTriggeringExamples
         }
 
-        var nonTriggeringExamples: [String] {
+        var nonTriggeringExamples: [Example] {
             let examples = alignColons ? alignColonsNonTriggeringExamples : alignLeftNonTriggeringExamples
             return examples + sharedNonTriggeringExamples
         }
 
-        private var alignColonsTriggeringExamples: [String] {
+        private var alignColonsTriggeringExamples: [Example] {
             return [
-                """
+                Example("""
                 doThings(arg: [
                     "foo": 1,
                     "bar": 2,
                     "fizz"↓: 2,
                     "buzz"↓: 2
                 ])
-                """,
-                """
+                """),
+                Example("""
                 let abc = [
                     "alpha": "a",
                     "beta"↓: "b",
@@ -133,28 +135,28 @@ extension CollectionAlignmentRule {
                     "delta": "d",
                     "epsilon"↓: "e"
                 ]
-                """,
-                """
+                """),
+                Example("""
                 var weirdColons = [
                     "a"    :  1,
                     "b"  ↓:2,
                     "c"    :      3
                 ]
-                """
+                """)
             ]
         }
 
-        private var alignColonsNonTriggeringExamples: [String] {
+        private var alignColonsNonTriggeringExamples: [Example] {
             return [
-                """
+                Example("""
                 doThings(arg: [
                     "foo": 1,
                     "bar": 2,
                    "fizz": 2,
                    "buzz": 2
                 ])
-                """,
-                """
+                """),
+                Example("""
                 let abc = [
                     "alpha": "a",
                      "beta": "b",
@@ -162,28 +164,28 @@ extension CollectionAlignmentRule {
                     "delta": "d",
                   "epsilon": "e"
                 ]
-                """,
-                """
+                """),
+                Example("""
                 var weirdColons = [
                     "a"    :  1,
                       "b"  :2,
                        "c" :      3
                 ]
-                """
+                """)
             ]
         }
 
-        private var alignLeftTriggeringExamples: [String] {
+        private var alignLeftTriggeringExamples: [Example] {
             return [
-                """
+                Example("""
                 doThings(arg: [
                     "foo": 1,
                     "bar": 2,
                    ↓"fizz": 2,
                    ↓"buzz": 2
                 ])
-                """,
-                """
+                """),
+                Example("""
                 let abc = [
                     "alpha": "a",
                      ↓"beta": "b",
@@ -191,28 +193,28 @@ extension CollectionAlignmentRule {
                     "delta": "d",
                   ↓"epsilon": "e"
                 ]
-                """,
-                """
+                """),
+                Example("""
                 let meals = [
                                 "breakfast": "oatmeal",
                                 "lunch": "sandwich",
                     ↓"dinner": "burger"
                 ]
-                """
+                """)
             ]
         }
 
-        private var alignLeftNonTriggeringExamples: [String] {
+        private var alignLeftNonTriggeringExamples: [Example] {
             return [
-                """
+                Example("""
                 doThings(arg: [
                     "foo": 1,
                     "bar": 2,
                     "fizz": 2,
                     "buzz": 2
                 ])
-                """,
-                """
+                """),
+                Example("""
                 let abc = [
                     "alpha": "a",
                     "beta": "b",
@@ -220,65 +222,65 @@ extension CollectionAlignmentRule {
                     "delta": "d",
                     "epsilon": "e"
                 ]
-                """,
-                """
+                """),
+                Example("""
                 let meals = [
                                 "breakfast": "oatmeal",
                                 "lunch": "sandwich",
                                 "dinner": "burger"
                 ]
-                """
+                """)
             ]
         }
 
-        private var sharedTriggeringExamples: [String] {
+        private var sharedTriggeringExamples: [Example] {
             return [
-                """
+                Example("""
                 let coordinates = [
                     CLLocationCoordinate2D(latitude: 0, longitude: 33),
                         ↓CLLocationCoordinate2D(latitude: 0, longitude: 66),
                     CLLocationCoordinate2D(latitude: 0, longitude: 99)
                 ]
-                """,
-                """
+                """),
+                Example("""
                 var evenNumbers: Set<Int> = [
                     2,
                   ↓4,
                     6
                 ]
-                """
+                """)
             ]
         }
 
-        private var sharedNonTriggeringExamples: [String] {
+        private var sharedNonTriggeringExamples: [Example] {
             return [
-                """
+                Example("""
                 let coordinates = [
                     CLLocationCoordinate2D(latitude: 0, longitude: 33),
                     CLLocationCoordinate2D(latitude: 0, longitude: 66),
                     CLLocationCoordinate2D(latitude: 0, longitude: 99)
                 ]
-                """,
-                """
+                """),
+                Example("""
                 var evenNumbers: Set<Int> = [
                     2,
                     4,
                     6
                 ]
-                """,
-                """
+                """),
+                Example("""
                 let abc = [1, 2, 3, 4]
-                """,
-                """
+                """),
+                Example("""
                 let abc = [
                     1, 2, 3, 4
                 ]
-                """,
-                """
+                """),
+                Example("""
                 let abc = [
                     "foo": "bar", "fizz": "buzz"
                 ]
-                """
+                """)
             ]
         }
     }

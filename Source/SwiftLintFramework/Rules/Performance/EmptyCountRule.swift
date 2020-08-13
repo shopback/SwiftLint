@@ -1,7 +1,7 @@
 import SourceKittenFramework
 
-public struct EmptyCountRule: ConfigurationProviderRule, OptInRule, AutomaticTestableRule {
-    public var configuration = SeverityConfiguration(.error)
+public struct EmptyCountRule: ConfigurationProviderRule, OptInRule {
+    public var configuration = EmptyCountConfiguration()
 
     public init() {}
 
@@ -11,35 +11,42 @@ public struct EmptyCountRule: ConfigurationProviderRule, OptInRule, AutomaticTes
         description: "Prefer checking `isEmpty` over comparing `count` to zero.",
         kind: .performance,
         nonTriggeringExamples: [
-            "var count = 0\n",
-            "[Int]().isEmpty\n",
-            "[Int]().count > 1\n",
-            "[Int]().count == 1\n",
-            "[Int]().count == 0xff\n",
-            "[Int]().count == 0b01\n",
-            "[Int]().count == 0o07\n",
-            "discount == 0\n",
-            "order.discount == 0\n"
+            Example("var count = 0\n"),
+            Example("[Int]().isEmpty\n"),
+            Example("[Int]().count > 1\n"),
+            Example("[Int]().count == 1\n"),
+            Example("[Int]().count == 0xff\n"),
+            Example("[Int]().count == 0b01\n"),
+            Example("[Int]().count == 0o07\n"),
+            Example("discount == 0\n"),
+            Example("order.discount == 0\n")
         ],
         triggeringExamples: [
-            "[Int]().↓count == 0\n",
-            "[Int]().↓count > 0\n",
-            "[Int]().↓count != 0\n",
-            "[Int]().↓count == 0x0\n",
-            "[Int]().↓count == 0x00_00\n",
-            "[Int]().↓count == 0b00\n",
-            "[Int]().↓count == 0o00\n",
-            "↓count == 0\n"
+            Example("[Int]().↓count == 0\n"),
+            Example("[Int]().↓count > 0\n"),
+            Example("[Int]().↓count != 0\n"),
+            Example("[Int]().↓count == 0x0\n"),
+            Example("[Int]().↓count == 0x00_00\n"),
+            Example("[Int]().↓count == 0b00\n"),
+            Example("[Int]().↓count == 0o00\n"),
+            Example("↓count == 0\n")
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
-        let pattern = "\\bcount\\s*(==|!=|<|<=|>|>=)\\s*0(\\b|([box][0_]+\\b){1})"
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
+        let defaultPattern = #"\bcount\s*(==|!=|<|<=|>|>=)\s*0(\b|([box][0_]+\b){1})"#
+        let prefixPattern = configuration.onlyAfterDot ? #"\."# : ""
+        let pattern = prefixPattern + defaultPattern
+
+        // Offset the violation location in case `only_after_dot` is turned on,
+        // to compensate for the pattern matching the dot
+        let offset = configuration.onlyAfterDot ? 1 : 0
+
         let excludingKinds = SyntaxKind.commentAndStringKinds
         return file.match(pattern: pattern, excludingSyntaxKinds: excludingKinds).map {
-            StyleViolation(ruleDescription: type(of: self).description,
-                           severity: configuration.severity,
-                           location: Location(file: file, characterOffset: $0.location))
+            StyleViolation(ruleDescription: Self.description,
+                           severity: configuration.severityConfiguration.severity,
+                           location: Location(file: file, characterOffset: $0.location + offset))
         }
     }
 }

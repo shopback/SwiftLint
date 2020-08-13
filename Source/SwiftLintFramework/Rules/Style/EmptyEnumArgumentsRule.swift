@@ -1,21 +1,27 @@
 import Foundation
 import SourceKittenFramework
 
-private func wrapInSwitch(variable: String = "foo", _ str: String) -> String {
-    return  "switch \(variable) {\n" +
-            "    \(str): break\n" +
-            "}"
+private func wrapInSwitch(
+    variable: String = "foo",
+    _ str: String,
+    file: StaticString = #file, line: UInt = #line) -> Example {
+    return Example(
+        """
+        switch \(variable) {
+        \(str): break
+        }
+        """, file: file, line: line)
 }
 
-private func wrapInFunc(_ str: String) -> String {
-    return """
+private func wrapInFunc(_ str: String, file: StaticString = #file, line: UInt = #line) -> Example {
+    return Example("""
     func example(foo: Foo) {
         switch foo {
         case \(str):
             break
         }
     }
-    """
+    """, file: file, line: line)
 }
 
 public struct EmptyEnumArgumentsRule: SubstitutionCorrectableASTRule, ConfigurationProviderRule, AutomaticTestableRule {
@@ -36,65 +42,72 @@ public struct EmptyEnumArgumentsRule: SubstitutionCorrectableASTRule, Configurat
             wrapInSwitch("case \"bar\".uppercased()"),
             wrapInSwitch(variable: "(foo, bar)", "case (_, _) where !something"),
             wrapInSwitch("case (let f as () -> String)?"),
-            wrapInSwitch("default")
+            wrapInSwitch("default"),
+            Example("if case .bar = foo {\n}"),
+            Example("guard case .bar = foo else {\n}")
         ],
         triggeringExamples: [
             wrapInSwitch("case .bar↓(_)"),
             wrapInSwitch("case .bar↓()"),
             wrapInSwitch("case .bar↓(_), .bar2↓(_)"),
             wrapInSwitch("case .bar↓() where method() > 2"),
-            wrapInFunc("case .bar↓(_)")
+            wrapInFunc("case .bar↓(_)"),
+            Example("if case .bar↓(_) = foo {\n}"),
+            Example("guard case .bar↓(_) = foo else {\n}")
         ],
         corrections: [
             wrapInSwitch("case .bar↓(_)"): wrapInSwitch("case .bar"),
             wrapInSwitch("case .bar↓()"): wrapInSwitch("case .bar"),
             wrapInSwitch("case .bar↓(_), .bar2↓(_)"): wrapInSwitch("case .bar, .bar2"),
             wrapInSwitch("case .bar↓() where method() > 2"): wrapInSwitch("case .bar where method() > 2"),
-            wrapInFunc("case .bar↓(_)"): wrapInFunc("case .bar")
+            wrapInFunc("case .bar↓(_)"): wrapInFunc("case .bar"),
+            Example("if case .bar↓(_) = foo {"): Example("if case .bar = foo {"),
+            Example("guard case .bar↓(_) = foo else {"): Example("guard case .bar = foo else {")
         ]
     )
 
-    public func validate(file: File, kind: StatementKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: StatementKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         return violationRanges(in: file, kind: kind, dictionary: dictionary).map {
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, characterOffset: $0.location))
         }
     }
 
-    public func substitution(for violationRange: NSRange, in file: File) -> (NSRange, String) {
+    public func substitution(for violationRange: NSRange, in file: SwiftLintFile) -> (NSRange, String)? {
         return (violationRange, "")
     }
 
-    public func violationRanges(in file: File, kind: StatementKind,
-                                dictionary: [String: SourceKitRepresentable]) -> [NSRange] {
-        guard kind == .case else {
+    public func violationRanges(in file: SwiftLintFile, kind: StatementKind,
+                                dictionary: SourceKittenDictionary) -> [NSRange] {
+        guard kind == .case || kind == .if || kind == .guard else {
             return []
         }
 
-        let contents = file.contents.bridge()
+        let contents = file.stringView
 
         let callsRanges = dictionary.substructure.compactMap { dict -> NSRange? in
-            guard dict.kind.flatMap(SwiftExpressionKind.init(rawValue:)) == .call,
-                let offset = dict.offset,
-                let length = dict.length,
-                let range = contents.byteRangeToNSRange(start: offset, length: length) else {
-                    return nil
+            guard dict.expressionKind == .call,
+                let byteRange = dict.byteRange,
+                let range = contents.byteRangeToNSRange(byteRange)
+            else {
+                return nil
             }
 
             return range
         }
 
         return dictionary.elements.flatMap { subDictionary -> [NSRange] in
-            guard subDictionary.kind == "source.lang.swift.structure.elem.pattern",
-                let offset = subDictionary.offset,
-                let length = subDictionary.length,
-                let caseRange = contents.byteRangeToNSRange(start: offset, length: length) else {
-                    return []
+            guard (subDictionary.kind == "source.lang.swift.structure.elem.pattern" ||
+                subDictionary.kind == "source.lang.swift.structure.elem.condition_expr"),
+                let byteRange = subDictionary.byteRange,
+                let caseRange = contents.byteRangeToNSRange(byteRange)
+            else {
+                return []
             }
 
-            let emptyArgumentRegex = regex("\\.\\S+\\s*(\\([,\\s_]*\\))")
+            let emptyArgumentRegex = regex(#"\.\S+\s*(\([,\s_]*\))"#)
             return emptyArgumentRegex.matches(in: file.contents, options: [], range: caseRange).compactMap { match in
                 let parenthesesRange = match.range(at: 1)
 
@@ -107,8 +120,8 @@ public struct EmptyEnumArgumentsRule: SubstitutionCorrectableASTRule, Configurat
                     // avoid matches in "(_, _) where"
                     if let whereByteRange = contents.NSRangeToByteRange(start: whereRange.location,
                                                                         length: whereRange.length),
-                        case let length = whereByteRange.location - offset,
-                        case let byteRange = NSRange(location: offset, length: length),
+                        case let length = whereByteRange.location - byteRange.location,
+                        case let byteRange = ByteRange(location: byteRange.location, length: length),
                         Set(file.syntaxMap.kinds(inByteRange: byteRange)) == [.keyword] {
                         return nil
                     }

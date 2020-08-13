@@ -13,18 +13,18 @@ public struct UnneededParenthesesInClosureArgumentRule: ConfigurationProviderRul
         description: "Parentheses are not needed when declaring closure arguments.",
         kind: .style,
         nonTriggeringExamples: [
-            "let foo = { (bar: Int) in }\n",
-            "let foo = { bar, _  in }\n",
-            "let foo = { bar in }\n",
-            "let foo = { bar -> Bool in return true }\n"
+            Example("let foo = { (bar: Int) in }\n"),
+            Example("let foo = { bar, _  in }\n"),
+            Example("let foo = { bar in }\n"),
+            Example("let foo = { bar -> Bool in return true }\n")
         ],
         triggeringExamples: [
-            "call(arg: { ↓(bar) in })\n",
-            "call(arg: { ↓(bar, _) in })\n",
-            "let foo = { ↓(bar) -> Bool in return true }\n",
-            "foo.map { ($0, $0) }.forEach { ↓(x, y) in }",
-            "foo.bar { [weak self] ↓(x, y) in }",
-            """
+            Example("call(arg: { ↓(bar) in })\n"),
+            Example("call(arg: { ↓(bar, _) in })\n"),
+            Example("let foo = { ↓(bar) -> Bool in return true }\n"),
+            Example("foo.map { ($0, $0) }.forEach { ↓(x, y) in }"),
+            Example("foo.bar { [weak self] ↓(x, y) in }"),
+            Example("""
             [].first { ↓(temp) in
                 [].first { ↓(temp) in
                     [].first { ↓(temp) in
@@ -35,8 +35,8 @@ public struct UnneededParenthesesInClosureArgumentRule: ConfigurationProviderRul
                 }
                 return false
             }
-            """,
-            """
+            """),
+            Example("""
             [].first { temp in
                 [].first { ↓(temp) in
                     [].first { ↓(temp) in
@@ -47,32 +47,32 @@ public struct UnneededParenthesesInClosureArgumentRule: ConfigurationProviderRul
                 }
                 return false
             }
-            """
+            """)
         ],
         corrections: [
-            "call(arg: { ↓(bar) in })\n": "call(arg: { bar in })\n",
-            "call(arg: { ↓(bar, _) in })\n": "call(arg: { bar, _ in })\n",
-            "let foo = { ↓(bar) -> Bool in return true }\n": "let foo = { bar -> Bool in return true }\n",
-            "method { ↓(foo, bar) in }\n": "method { foo, bar in }\n",
-            "foo.map { ($0, $0) }.forEach { ↓(x, y) in }": "foo.map { ($0, $0) }.forEach { x, y in }",
-            "foo.bar { [weak self] ↓(x, y) in }": "foo.bar { [weak self] x, y in }"
+            Example("call(arg: { ↓(bar) in })\n"): Example("call(arg: { bar in })\n"),
+            Example("call(arg: { ↓(bar, _) in })\n"): Example("call(arg: { bar, _ in })\n"),
+            Example("let foo = { ↓(bar) -> Bool in return true }\n"):
+                Example("let foo = { bar -> Bool in return true }\n"),
+            Example("method { ↓(foo, bar) in }\n"): Example("method { foo, bar in }\n"),
+            Example("foo.map { ($0, $0) }.forEach { ↓(x, y) in }"): Example("foo.map { ($0, $0) }.forEach { x, y in }"),
+            Example("foo.bar { [weak self] ↓(x, y) in }"): Example("foo.bar { [weak self] x, y in }")
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         return violationRanges(file: file).map {
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, characterOffset: $0.location))
         }
     }
 
-    private func violationRanges(file: File) -> [NSRange] {
+    private func violationRanges(file: SwiftLintFile) -> [NSRange] {
         let capturesPattern = "(?:\\[[^\\]]+\\])?"
         let pattern = "\\{\\s*\(capturesPattern)\\s*(\\([^:}]+?\\))\\s*(in|->)"
-        let contents = file.contents.bridge()
-        let range = NSRange(location: 0, length: contents.length)
-        return regex(pattern).matches(in: file.contents, options: [], range: range).compactMap { match -> NSRange? in
+        let contents = file.stringView
+        return regex(pattern).matches(in: file).compactMap { match -> NSRange? in
             let parametersRange = match.range(at: 1)
             let inRange = match.range(at: 2)
             guard let parametersByteRange = contents.NSRangeToByteRange(start: parametersRange.location,
@@ -84,13 +84,11 @@ public struct UnneededParenthesesInClosureArgumentRule: ConfigurationProviderRul
 
             let parametersTokens = file.syntaxMap.tokens(inByteRange: parametersByteRange)
             let parametersAreValid = parametersTokens.allSatisfy { token in
-                let kind = SyntaxKind(rawValue: token.type)
-                if kind == .identifier {
+                if token.kind == .identifier {
                     return true
                 }
 
-                return kind == .keyword &&
-                    file.contents.bridge().substringWithByteRange(start: token.offset, length: token.length) == "_"
+                return token.kind == .keyword && file.contents(for: token) == "_"
             }
 
             let inKinds = Set(file.syntaxMap.kinds(inByteRange: inByteRange))
@@ -103,7 +101,7 @@ public struct UnneededParenthesesInClosureArgumentRule: ConfigurationProviderRul
         }
     }
 
-    public func correct(file: File) -> [Correction] {
+    public func correct(file: SwiftLintFile) -> [Correction] {
         let violatingRanges = file.ruleEnabled(violatingRanges: violationRanges(file: file), for: self)
         var correctedContents = file.contents
         var adjustedLocations = [Int]()
@@ -123,7 +121,7 @@ public struct UnneededParenthesesInClosureArgumentRule: ConfigurationProviderRul
         file.write(correctedContents)
 
         return adjustedLocations.map {
-            Correction(ruleDescription: type(of: self).description,
+            Correction(ruleDescription: Self.description,
                        location: Location(file: file, characterOffset: $0))
         }
     }

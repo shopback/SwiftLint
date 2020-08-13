@@ -1,4 +1,8 @@
+/// Reports violations as XML conforming to the Checkstyle specification, as defined here:
+/// https://www.jetbrains.com/help/teamcity/xml-report-processing.html
 public struct CheckstyleReporter: Reporter {
+    // MARK: - Reporter Conformance
+
     public static let identifier = "checkstyle"
     public static let isRealtime = false
 
@@ -17,6 +21,8 @@ public struct CheckstyleReporter: Reporter {
         ].joined()
     }
 
+    // MARK: - Private
+
     private static func generateForViolationFile(_ file: String, violations: [StyleViolation]) -> String {
         return [
             "\n\t<file name=\"", file, "\">\n",
@@ -30,7 +36,7 @@ public struct CheckstyleReporter: Reporter {
         let col: Int = violation.location.character ?? 0
         let severity: String = violation.severity.rawValue
         let reason: String = violation.reason.escapedForXML()
-        let identifier: String = violation.ruleDescription.identifier
+        let identifier: String = violation.ruleIdentifier
         let source: String = "swiftlint.rules.\(identifier)".escapedForXML()
         return [
             "\t\t<error line=\"\(line)\" ",

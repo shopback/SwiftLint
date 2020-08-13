@@ -17,16 +17,16 @@ public struct ClosureBodyLengthRule: OptInRule, ASTRule, ConfigurationProviderRu
 
     // MARK: - ASTRule
 
-    public func validate(file: File,
+    public func validate(file: SwiftLintFile,
                          kind: SwiftExpressionKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard
             kind == .closure,
             let offset = dictionary.offset,
             let bodyOffset = dictionary.bodyOffset,
             let bodyLength = dictionary.bodyLength,
-            let startLine = file.contents.bridge().lineAndCharacter(forByteOffset: bodyOffset)?.line,
-            let endLine = file.contents.bridge().lineAndCharacter(forByteOffset: bodyOffset + bodyLength)?.line
+            let startLine = file.stringView.lineAndCharacter(forByteOffset: bodyOffset)?.line,
+            let endLine = file.stringView.lineAndCharacter(forByteOffset: bodyOffset + bodyLength)?.line
             else {
                 return []
         }
@@ -41,7 +41,7 @@ public struct ClosureBodyLengthRule: OptInRule, ASTRule, ConfigurationProviderRu
             let reason = "Closure body should span \(configuration.warning) lines or less "
                 + "excluding comments and whitespace: currently spans \(lineCount) lines"
 
-            return StyleViolation(ruleDescription: type(of: self).description,
+            return StyleViolation(ruleDescription: Self.description,
                                   severity: parameter.severity,
                                   location: Location(file: file, byteOffset: offset),
                                   reason: reason)

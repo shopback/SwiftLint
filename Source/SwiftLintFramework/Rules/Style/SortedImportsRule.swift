@@ -31,17 +31,17 @@ private extension Sequence where Element == Line {
     // Groups lines, so that lines that are one after the other
     // will end up in same group.
     func grouped() -> [[Line]] {
-        return reduce([[]]) { result, line in
+        return reduce(into: [[]]) { result, line in
             guard let last = result.last?.last else {
-                return [[line]]
+                result = [[line]]
+                return
             }
-            var copy = result
+
             if last.index == line.index - 1 {
-                copy[copy.count - 1].append(line)
+                result[result.count - 1].append(line)
             } else {
-                copy.append([line])
+                result.append([line])
             }
-            return copy
         }
     }
 }
@@ -57,13 +57,13 @@ public struct SortedImportsRule: CorrectableRule, ConfigurationProviderRule, Opt
         description: "Imports should be sorted.",
         kind: .style,
         nonTriggeringExamples: [
-            "import AAA\nimport BBB\nimport CCC\nimport DDD",
-            "import Alamofire\nimport API",
-            "import labc\nimport Ldef",
-            "import BBB\n// comment\nimport AAA\nimport CCC",
-            "@testable import AAA\nimport   CCC",
-            "import AAA\n@testable import   CCC",
-            """
+            Example("import AAA\nimport BBB\nimport CCC\nimport DDD"),
+            Example("import Alamofire\nimport API"),
+            Example("import labc\nimport Ldef"),
+            Example("import BBB\n// comment\nimport AAA\nimport CCC"),
+            Example("@testable import AAA\nimport   CCC"),
+            Example("import AAA\n@testable import   CCC"),
+            Example("""
             import EEE.A
             import FFF.B
             #if os(Linux)
@@ -75,14 +75,14 @@ public struct SortedImportsRule: CorrectableRule, ConfigurationProviderRule, Opt
             #endif
             import AAA
             import BBB
-            """
+            """)
         ],
         triggeringExamples: [
-            "import AAA\nimport ZZZ\nimport ↓BBB\nimport CCC",
-            "import DDD\n// comment\nimport CCC\nimport ↓AAA",
-            "@testable import CCC\nimport   ↓AAA",
-            "import CCC\n@testable import   ↓AAA",
-            """
+            Example("import AAA\nimport ZZZ\nimport ↓BBB\nimport CCC"),
+            Example("import DDD\n// comment\nimport CCC\nimport ↓AAA"),
+            Example("@testable import CCC\nimport   ↓AAA"),
+            Example("import CCC\n@testable import   ↓AAA"),
+            Example("""
             import FFF.B
             import ↓EEE.A
             #if os(Linux)
@@ -94,15 +94,17 @@ public struct SortedImportsRule: CorrectableRule, ConfigurationProviderRule, Opt
             #endif
             import AAA
             import BBB
-            """
+            """)
         ],
         corrections: [
-            "import AAA\nimport ZZZ\nimport ↓BBB\nimport CCC": "import AAA\nimport BBB\nimport CCC\nimport ZZZ",
-            "import BBB // comment\nimport ↓AAA": "import AAA\nimport BBB // comment",
-            "import BBB\n// comment\nimport CCC\nimport ↓AAA": "import BBB\n// comment\nimport AAA\nimport CCC",
-            "@testable import CCC\nimport  ↓AAA": "import  AAA\n@testable import CCC",
-            "import CCC\n@testable import  ↓AAA": "@testable import  AAA\nimport CCC",
-            """
+            Example("import AAA\nimport ZZZ\nimport ↓BBB\nimport CCC"):
+                Example("import AAA\nimport BBB\nimport CCC\nimport ZZZ"),
+            Example("import BBB // comment\nimport ↓AAA"): Example("import AAA\nimport BBB // comment"),
+            Example("import BBB\n// comment\nimport CCC\nimport ↓AAA"):
+                Example("import BBB\n// comment\nimport AAA\nimport CCC"),
+            Example("@testable import CCC\nimport  ↓AAA"): Example("import  AAA\n@testable import CCC"),
+            Example("import CCC\n@testable import  ↓AAA"): Example("@testable import  AAA\nimport CCC"),
+            Example("""
             import FFF.B
             import ↓EEE.A
             #if os(Linux)
@@ -114,8 +116,8 @@ public struct SortedImportsRule: CorrectableRule, ConfigurationProviderRule, Opt
             #endif
             import AAA
             import BBB
-            """:
-            """
+            """):
+            Example("""
             import EEE.A
             import FFF.B
             #if os(Linux)
@@ -127,28 +129,28 @@ public struct SortedImportsRule: CorrectableRule, ConfigurationProviderRule, Opt
             #endif
             import AAA
             import BBB
-            """
+            """)
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         let groups = importGroups(in: file, filterEnabled: false)
         return violatingOffsets(inGroups: groups).map { index -> StyleViolation in
             let location = Location(file: file, characterOffset: index)
-            return StyleViolation(ruleDescription: type(of: self).description,
+            return StyleViolation(ruleDescription: Self.description,
                                   severity: configuration.severity,
                                   location: location)
         }
     }
 
-    private func importGroups(in file: File, filterEnabled: Bool) -> [[Line]] {
+    private func importGroups(in file: SwiftLintFile, filterEnabled: Bool) -> [[Line]] {
         var importRanges = file.match(pattern: "import\\s+\\w+", with: [.keyword, .identifier])
         if filterEnabled {
             importRanges = file.ruleEnabled(violatingRanges: importRanges, for: self)
         }
 
-        let contents = file.contents.bridge()
-        let lines = contents.lines()
+        let contents = file.stringView
+        let lines = file.lines
         let importLines: [Line] = importRanges.compactMap { range in
             guard let line = contents.lineAndCharacter(forCharacterOffset: range.location)?.line
                 else { return nil }
@@ -173,12 +175,12 @@ public struct SortedImportsRule: CorrectableRule, ConfigurationProviderRule, Opt
         }
     }
 
-    public func correct(file: File) -> [Correction] {
+    public func correct(file: SwiftLintFile) -> [Correction] {
         let groups = importGroups(in: file, filterEnabled: true)
 
         let corrections = violatingOffsets(inGroups: groups).map { characterOffset -> Correction in
             let location = Location(file: file, characterOffset: characterOffset)
-            return Correction(ruleDescription: type(of: self).description, location: location)
+            return Correction(ruleDescription: Self.description, location: location)
         }
 
         guard !corrections.isEmpty else {

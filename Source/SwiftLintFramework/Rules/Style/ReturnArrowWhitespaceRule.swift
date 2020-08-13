@@ -13,49 +13,49 @@ public struct ReturnArrowWhitespaceRule: CorrectableRule, ConfigurationProviderR
                      "separate line.",
         kind: .style,
         nonTriggeringExamples: [
-            "func abc() -> Int {}\n",
-            "func abc() -> [Int] {}\n",
-            "func abc() -> (Int, Int) {}\n",
-            "var abc = {(param: Int) -> Void in }\n",
-            "func abc() ->\n    Int {}\n",
-            "func abc()\n    -> Int {}\n"
+            Example("func abc() -> Int {}\n"),
+            Example("func abc() -> [Int] {}\n"),
+            Example("func abc() -> (Int, Int) {}\n"),
+            Example("var abc = {(param: Int) -> Void in }\n"),
+            Example("func abc() ->\n    Int {}\n"),
+            Example("func abc()\n    -> Int {}\n")
         ],
         triggeringExamples: [
-            "func abc()↓->Int {}\n",
-            "func abc()↓->[Int] {}\n",
-            "func abc()↓->(Int, Int) {}\n",
-            "func abc()↓-> Int {}\n",
-            "func abc()↓ ->Int {}\n",
-            "func abc()↓  ->  Int {}\n",
-            "var abc = {(param: Int)↓ ->Bool in }\n",
-            "var abc = {(param: Int)↓->Bool in }\n"
+            Example("func abc()↓->Int {}\n"),
+            Example("func abc()↓->[Int] {}\n"),
+            Example("func abc()↓->(Int, Int) {}\n"),
+            Example("func abc()↓-> Int {}\n"),
+            Example("func abc()↓ ->Int {}\n"),
+            Example("func abc()↓  ->  Int {}\n"),
+            Example("var abc = {(param: Int)↓ ->Bool in }\n"),
+            Example("var abc = {(param: Int)↓->Bool in }\n")
         ],
         corrections: [
-            "func abc()↓->Int {}\n": "func abc() -> Int {}\n",
-            "func abc()↓-> Int {}\n": "func abc() -> Int {}\n",
-            "func abc()↓ ->Int {}\n": "func abc() -> Int {}\n",
-            "func abc()↓  ->  Int {}\n": "func abc() -> Int {}\n",
-            "func abc()↓\n  ->  Int {}\n": "func abc()\n  -> Int {}\n",
-            "func abc()↓\n->  Int {}\n": "func abc()\n-> Int {}\n",
-            "func abc()↓  ->\n  Int {}\n": "func abc() ->\n  Int {}\n",
-            "func abc()↓  ->\nInt {}\n": "func abc() ->\nInt {}\n"
+            Example("func abc()↓->Int {}\n"): Example("func abc() -> Int {}\n"),
+            Example("func abc()↓-> Int {}\n"): Example("func abc() -> Int {}\n"),
+            Example("func abc()↓ ->Int {}\n"): Example("func abc() -> Int {}\n"),
+            Example("func abc()↓  ->  Int {}\n"): Example("func abc() -> Int {}\n"),
+            Example("func abc()↓\n  ->  Int {}\n"): Example("func abc()\n  -> Int {}\n"),
+            Example("func abc()↓\n->  Int {}\n"): Example("func abc()\n-> Int {}\n"),
+            Example("func abc()↓  ->\n  Int {}\n"): Example("func abc() ->\n  Int {}\n"),
+            Example("func abc()↓  ->\nInt {}\n"): Example("func abc() ->\nInt {}\n")
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         return violationRanges(in: file, skipParentheses: true).map {
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, characterOffset: $0.location))
         }
     }
 
-    public func correct(file: File) -> [Correction] {
+    public func correct(file: SwiftLintFile) -> [Correction] {
         let violationsRanges = violationRanges(in: file, skipParentheses: false)
         let matches = file.ruleEnabled(violatingRanges: violationsRanges, for: self)
         if matches.isEmpty { return [] }
         let regularExpression = regex(pattern)
-        let description = type(of: self).description
+        let description = Self.description
         var corrections = [Correction]()
         var contents = file.contents
 
@@ -86,7 +86,7 @@ public struct ReturnArrowWhitespaceRule: CorrectableRule, ConfigurationProviderR
     // MARK: - Private
 
     private let pattern: String = {
-        //just horizontal spacing so that "func abc()->\n" can pass validation
+        // Just horizontal spacing so that "func abc()->\n" can pass validation
         let space = "[ \\f\\r\\t]"
 
         // Either 0 space characters or 2+
@@ -104,7 +104,7 @@ public struct ReturnArrowWhitespaceRule: CorrectableRule, ConfigurationProviderR
         return "\\)(\(patterns.joined(separator: "|")))\\S+"
     }()
 
-    private func violationRanges(in file: File, skipParentheses: Bool) -> [NSRange] {
+    private func violationRanges(in file: SwiftLintFile, skipParentheses: Bool) -> [NSRange] {
         let matches = file.match(pattern: pattern, with: [.typeidentifier])
         guard skipParentheses else {
             return matches

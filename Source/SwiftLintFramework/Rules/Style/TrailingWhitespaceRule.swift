@@ -13,19 +13,19 @@ public struct TrailingWhitespaceRule: CorrectableRule, ConfigurationProviderRule
         description: "Lines should not have trailing whitespace.",
         kind: .style,
         nonTriggeringExamples: [
-            "let name: String\n", "//\n", "// \n",
-            "let name: String //\n", "let name: String // \n"
+            Example("let name: String\n"), Example("//\n"), Example("// \n"),
+            Example("let name: String //\n"), Example("let name: String // \n")
         ],
         triggeringExamples: [
-            "let name: String \n", "/* */ let name: String \n"
+            Example("let name: String \n"), Example("/* */ let name: String \n")
         ],
         corrections: [
-            "let name: String \n": "let name: String\n",
-            "/* */ let name: String \n": "/* */ let name: String\n"
+            Example("let name: String \n"): Example("let name: String\n"),
+            Example("/* */ let name: String \n"): Example("/* */ let name: String\n")
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         let filteredLines = file.lines.filter {
             guard $0.content.hasTrailingWhitespace() else { return false }
 
@@ -42,13 +42,13 @@ public struct TrailingWhitespaceRule: CorrectableRule, ConfigurationProviderRule
         }
 
         return filteredLines.map {
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severityConfiguration.severity,
                            location: Location(file: file.path, line: $0.index))
         }
     }
 
-    public func correct(file: File) -> [Correction] {
+    public func correct(file: SwiftLintFile) -> [Correction] {
         let whitespaceCharacterSet = CharacterSet.whitespaces
         var correctedLines = [String]()
         var corrections = [Correction]()
@@ -80,7 +80,7 @@ public struct TrailingWhitespaceRule: CorrectableRule, ConfigurationProviderRule
             }
 
             if line.content != correctedLine {
-                let description = type(of: self).description
+                let description = Self.description
                 let location = Location(file: file.path, line: line.index)
                 corrections.append(Correction(ruleDescription: description, location: location))
             }

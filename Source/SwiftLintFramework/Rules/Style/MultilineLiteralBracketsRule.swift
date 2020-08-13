@@ -12,11 +12,11 @@ public struct MultilineLiteralBracketsRule: ASTRule, OptInRule, ConfigurationPro
         description: "Multiline literals should have their surrounding brackets in a new line.",
         kind: .style,
         nonTriggeringExamples: [
-            """
+            Example("""
             let trio = ["harry", "ronald", "hermione"]
             let houseCup = ["gryffinder": 460, "hufflepuff": 370, "ravenclaw": 410, "slytherin": 450]
-            """,
-            """
+            """),
+            Example("""
             let trio = [
                 "harry",
                 "ronald",
@@ -28,8 +28,8 @@ public struct MultilineLiteralBracketsRule: ASTRule, OptInRule, ConfigurationPro
                 "ravenclaw": 410,
                 "slytherin": 450
             ]
-            """,
-            """
+            """),
+            Example("""
             let trio = [
                 "harry", "ronald", "hermione"
             ]
@@ -37,8 +37,8 @@ public struct MultilineLiteralBracketsRule: ASTRule, OptInRule, ConfigurationPro
                 "gryffinder": 460, "hufflepuff": 370,
                 "ravenclaw": 410, "slytherin": 450
             ]
-            """,
-            """
+            """),
+            Example("""
                 _ = [
                     1,
                     2,
@@ -47,39 +47,39 @@ public struct MultilineLiteralBracketsRule: ASTRule, OptInRule, ConfigurationPro
                     5, 6,
                     7, 8, 9
                 ]
-            """
+            """)
         ],
         triggeringExamples: [
-            """
+            Example("""
             let trio = [↓"harry",
                         "ronald",
                         "hermione"
             ]
-            """,
-            """
+            """),
+            Example("""
             let houseCup = [↓"gryffinder": 460, "hufflepuff": 370,
                             "ravenclaw": 410, "slytherin": 450
             ]
-            """,
-            """
+            """),
+            Example("""
             let trio = [
                 "harry",
                 "ronald",
                 "hermione"↓]
-            """,
-            """
+            """),
+            Example("""
             let houseCup = [
                 "gryffinder": 460, "hufflepuff": 370,
                 "ravenclaw": 410, "slytherin": 450↓]
-            """,
-            """
+            """),
+            Example("""
             class Hogwarts {
                 let houseCup = [
                     "gryffinder": 460, "hufflepuff": 370,
                     "ravenclaw": 410, "slytherin": 450↓]
             }
-            """,
-            """
+            """),
+            Example("""
                 _ = [
                     1,
                     2,
@@ -87,29 +87,27 @@ public struct MultilineLiteralBracketsRule: ASTRule, OptInRule, ConfigurationPro
                     4,
                     5, 6,
                     7, 8, 9↓]
-            """,
-            """
+            """),
+            Example("""
                 _ = [↓1, 2, 3,
                      4, 5, 6,
                      7, 8, 9
                 ]
-            """
+            """)
         ]
     )
 
-    public func validate(file: File,
+    public func validate(file: SwiftLintFile,
                          kind: SwiftExpressionKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard
             [.array, .dictionary].contains(kind),
-            let bodyOffset = dictionary.bodyOffset,
-            let bodyLength = dictionary.bodyLength,
-            let range = file.contents.bridge().byteRangeToNSRange(start: bodyOffset, length: bodyLength)
+            let bodyByteRange = dictionary.bodyByteRange,
+            let body = file.stringView.substringWithByteRange(bodyByteRange)
         else {
             return []
         }
 
-        let body = file.contents.substring(from: range.location, length: range.length)
         let isMultiline = body.contains("\n")
         guard isMultiline else {
             return []
@@ -118,18 +116,18 @@ public struct MultilineLiteralBracketsRule: ASTRule, OptInRule, ConfigurationPro
         let expectedBodyBeginRegex = regex("\\A[ \\t]*\\n")
         let expectedBodyEndRegex = regex("\\n[ \\t]*\\z")
 
-        var violatingByteOffsets = [Int]()
+        var violatingByteOffsets = [ByteCount]()
         if expectedBodyBeginRegex.firstMatch(in: body, options: [], range: body.fullNSRange) == nil {
-            violatingByteOffsets.append(bodyOffset)
+            violatingByteOffsets.append(bodyByteRange.location)
         }
 
         if expectedBodyEndRegex.firstMatch(in: body, options: [], range: body.fullNSRange) == nil {
-            violatingByteOffsets.append(bodyOffset + bodyLength)
+            violatingByteOffsets.append(bodyByteRange.upperBound)
         }
 
         return violatingByteOffsets.map { byteOffset in
             StyleViolation(
-                ruleDescription: type(of: self).description, severity: configuration.severity,
+                ruleDescription: Self.description, severity: configuration.severity,
                 location: Location(file: file, byteOffset: byteOffset)
             )
         }

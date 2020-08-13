@@ -14,27 +14,53 @@ public struct NestingRule: ASTRule, ConfigurationProviderRule, AutomaticTestable
         description: "Types should be nested at most 1 level deep, " +
                      "and statements should be nested at most 5 levels deep.",
         kind: .metrics,
-        nonTriggeringExamples: ["class", "struct", "enum"].flatMap { kind -> [String] in
+        nonTriggeringExamples: ["class", "struct", "enum"].flatMap { kind -> [Example] in
             [
-                "\(kind) Class0 { \(kind) Class1 {} }\n",
-                "func func0() {\nfunc func1() {\nfunc func2() {\nfunc func3() {\nfunc func4() { " +
-                "func func5() {\n}\n}\n}\n}\n}\n}\n"
+                Example("\(kind) Class0 { \(kind) Class1 {} }\n"),
+                Example("""
+                func func0() {
+                    func func1() {
+                        func func2() {
+                            func func3() {
+                                func func4() {
+                                    func func5() {
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                """)
             ]
-        } + ["enum Enum0 { enum Enum1 { case Case } }"],
-        triggeringExamples: ["class", "struct", "enum"].map { kind -> String in
-            return "\(kind) A { \(kind) B { ↓\(kind) C {} } }\n"
+        } + [Example("enum Enum0 { enum Enum1 { case Case } }")],
+        triggeringExamples: ["class", "struct", "enum"].map { kind -> Example in
+            return Example("\(kind) A { \(kind) B { ↓\(kind) C {} } }\n")
         } + [
-            "func func0() {\nfunc func1() {\nfunc func2() {\nfunc func3() {\nfunc func4() { " +
-            "func func5() {\n↓func func6() {\n}\n}\n}\n}\n}\n}\n}\n"
+            Example("""
+            func func0() {
+                func func1() {
+                    func func2() {
+                        func func3() {
+                            func func4() {
+                                func func5() {
+                                    ↓func func6() {
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            """)
         ]
     )
 
-    public func validate(file: File, kind: SwiftDeclarationKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftDeclarationKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         return validate(file: file, kind: kind, dictionary: dictionary, level: 0)
     }
 
-    private func validate(file: File, kind: SwiftDeclarationKind, dictionary: [String: SourceKitRepresentable],
+    private func validate(file: SwiftLintFile, kind: SwiftDeclarationKind, dictionary: SourceKittenDictionary,
                           level: Int) -> [StyleViolation] {
         var violations = [StyleViolation]()
         let typeKinds = SwiftDeclarationKind.typeKinds
@@ -45,14 +71,14 @@ public struct NestingRule: ASTRule, ConfigurationProviderRule, AutomaticTestable
                 let threshold = configuration.threshold(with: targetLevel, for: severity)
                 let pluralSuffix = threshold > 1 ? "s" : ""
                 violations.append(StyleViolation(
-                    ruleDescription: type(of: self).description,
+                    ruleDescription: Self.description,
                     severity: severity,
                     location: Location(file: file, byteOffset: offset),
                     reason: "\(targetName) should be nested at most \(threshold) level\(pluralSuffix) deep"))
             }
         }
         violations.append(contentsOf: dictionary.substructure.compactMap { subDict in
-            if let kind = (subDict.kind).flatMap(SwiftDeclarationKind.init) {
+            if let kind = subDict.declarationKind {
                 return (kind, subDict)
             }
             return nil

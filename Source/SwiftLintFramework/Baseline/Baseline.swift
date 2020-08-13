@@ -14,7 +14,7 @@ public class Baseline {
 
     public func isInBaseline(violation: StyleViolation) -> Bool {
         let baselineViolation = BaselineViolation(
-                ruleIdentifier: violation.ruleDescription.identifier,
+                ruleIdentifier: violation.ruleIdentifier,
                 location: locationWithoutRoot(violation: violation),
                 reason: violation.reason
         )
@@ -69,6 +69,6 @@ public class Baseline {
 
     private func generateForSingleViolation(_ violation: StyleViolation) -> String {
         let location = locationWithoutRoot(violation: violation)
-        return "\(location);\(violation.reason);\(violation.ruleDescription.identifier)"
+        return "\(location);\(violation.reason);\(violation.ruleIdentifier)"
     }
 }

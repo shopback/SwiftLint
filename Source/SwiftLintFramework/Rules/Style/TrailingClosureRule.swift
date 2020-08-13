@@ -12,45 +12,46 @@ public struct TrailingClosureRule: OptInRule, ConfigurationProviderRule {
         description: "Trailing closure syntax should be used whenever possible.",
         kind: .style,
         nonTriggeringExamples: [
-            "foo.map { $0 + 1 }\n",
-            "foo.bar()\n",
-            "foo.reduce(0) { $0 + 1 }\n",
-            "if let foo = bar.map({ $0 + 1 }) { }\n",
-            "foo.something(param1: { $0 }, param2: { $0 + 1 })\n",
-            "offsets.sorted { $0.offset < $1.offset }\n",
-            "foo.something({ return 1 }())",
-            "foo.something({ return $0 }(1))",
-            "foo.something(0, { return 1 }())"
+            Example("foo.map { $0 + 1 }\n"),
+            Example("foo.bar()\n"),
+            Example("foo.reduce(0) { $0 + 1 }\n"),
+            Example("if let foo = bar.map({ $0 + 1 }) { }\n"),
+            Example("foo.something(param1: { $0 }, param2: { $0 + 1 })\n"),
+            Example("offsets.sorted { $0.offset < $1.offset }\n"),
+            Example("foo.something({ return 1 }())"),
+            Example("foo.something({ return $0 }(1))"),
+            Example("foo.something(0, { return 1 }())")
         ],
         triggeringExamples: [
-            "↓foo.map({ $0 + 1 })\n",
-            "↓foo.reduce(0, combine: { $0 + 1 })\n",
-            "↓offsets.sorted(by: { $0.offset < $1.offset })\n",
-            "↓foo.something(0, { $0 + 1 })\n"
+            Example("↓foo.map({ $0 + 1 })\n"),
+            Example("↓foo.reduce(0, combine: { $0 + 1 })\n"),
+            Example("↓offsets.sorted(by: { $0.offset < $1.offset })\n"),
+            Example("↓foo.something(0, { $0 + 1 })\n")
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
-        return violationOffsets(for: file.structure.dictionary, file: file).map {
-            StyleViolation(ruleDescription: type(of: self).description,
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
+        let dict = file.structureDictionary
+        return violationOffsets(for: dict, file: file).map {
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severityConfiguration.severity,
                            location: Location(file: file, byteOffset: $0))
         }
     }
 
-    private func violationOffsets(for dictionary: [String: SourceKitRepresentable], file: File) -> [Int] {
-        var results = [Int]()
+    private func violationOffsets(for dictionary: SourceKittenDictionary, file: SwiftLintFile) -> [ByteCount] {
+        var results = [ByteCount]()
 
-        if dictionary.kind.flatMap(SwiftExpressionKind.init(rawValue:)) == .call,
+        if dictionary.expressionKind == .call,
             shouldBeTrailingClosure(dictionary: dictionary, file: file),
             let offset = dictionary.offset {
             results = [offset]
         }
 
-        if let kind = dictionary.kind.flatMap(StatementKind.init), kind != .brace {
+        if let kind = dictionary.statementKind, kind != .brace {
             // trailing closures are not allowed in `if`, `guard`, etc
-            results += dictionary.substructure.flatMap { subDict -> [Int] in
-                guard subDict.kind.flatMap(StatementKind.init) == .brace else {
+            results += dictionary.substructure.flatMap { subDict -> [ByteCount] in
+                guard subDict.statementKind == .brace else {
                     return []
                 }
 
@@ -65,7 +66,7 @@ public struct TrailingClosureRule: OptInRule, ConfigurationProviderRule {
         return results
     }
 
-    private func shouldBeTrailingClosure(dictionary: [String: SourceKitRepresentable], file: File) -> Bool {
+    private func shouldBeTrailingClosure(dictionary: SourceKittenDictionary, file: SwiftLintFile) -> Bool {
         func shouldTrigger() -> Bool {
             return !isAlreadyTrailingClosure(dictionary: dictionary, file: file) &&
                 !isAnonymousClosureCall(dictionary: dictionary, file: file)
@@ -77,7 +78,7 @@ public struct TrailingClosureRule: OptInRule, ConfigurationProviderRule {
         if !configuration.onlySingleMutedParameter, !arguments.isEmpty,
             case let closureArguments = filterClosureArguments(arguments, file: file),
             closureArguments.count == 1,
-            closureArguments.last?.bridge() == arguments.last?.bridge() {
+            closureArguments.last?.offset == arguments.last?.offset {
             return shouldTrigger()
         }
 
@@ -89,7 +90,8 @@ public struct TrailingClosureRule: OptInRule, ConfigurationProviderRule {
             let nameLength = dictionary.nameLength,
             case let start = nameOffset + nameLength,
             case let length = totalLength + offset - start,
-            let range = file.contents.bridge().byteRangeToNSRange(start: start, length: length),
+            case let byteRange = ByteRange(location: start, length: length),
+            let range = file.stringView.byteRangeToNSRange(byteRange),
             let match = regex("\\s*\\(\\s*\\{").firstMatch(in: file.contents, options: [], range: range)?.range,
             match.location == range.location {
             return shouldTrigger()
@@ -98,37 +100,36 @@ public struct TrailingClosureRule: OptInRule, ConfigurationProviderRule {
         return false
     }
 
-    private func filterClosureArguments(_ arguments: [[String: SourceKitRepresentable]],
-                                        file: File) -> [[String: SourceKitRepresentable]] {
+    private func filterClosureArguments(_ arguments: [SourceKittenDictionary],
+                                        file: SwiftLintFile) -> [SourceKittenDictionary] {
         return arguments.filter { argument in
-            guard let offset = argument.bodyOffset,
-                let length = argument.bodyLength,
-                let range = file.contents.bridge().byteRangeToNSRange(start: offset, length: length),
+            guard let bodyByteRange = argument.bodyByteRange,
+                let range = file.stringView.byteRangeToNSRange(bodyByteRange),
                 let match = regex("\\s*\\{").firstMatch(in: file.contents, options: [], range: range)?.range,
-                match.location == range.location else {
-                    return false
+                match.location == range.location
+            else {
+                return false
             }
 
             return true
         }
     }
 
-    private func isAlreadyTrailingClosure(dictionary: [String: SourceKitRepresentable], file: File) -> Bool {
-        guard let offset = dictionary.offset,
-            let length = dictionary.length,
-            let text = file.contents.bridge().substringWithByteRange(start: offset, length: length) else {
-                return false
+    private func isAlreadyTrailingClosure(dictionary: SourceKittenDictionary, file: SwiftLintFile) -> Bool {
+        guard let byteRange = dictionary.byteRange,
+            let text = file.stringView.substringWithByteRange(byteRange)
+        else {
+            return false
         }
 
         return !text.hasSuffix(")")
     }
 
-    private func isAnonymousClosureCall(dictionary: [String: SourceKitRepresentable],
-                                        file: File) -> Bool {
-        guard let offset = dictionary.offset,
-            let length = dictionary.length,
-            let range = file.contents.bridge().byteRangeToNSRange(start: offset, length: length) else {
-                return false
+    private func isAnonymousClosureCall(dictionary: SourceKittenDictionary, file: SwiftLintFile) -> Bool {
+        guard let byteRange = dictionary.byteRange,
+            let range = file.stringView.byteRangeToNSRange(byteRange)
+        else {
+            return false
         }
 
         let pattern = regex("\\)\\s*\\)\\z")

@@ -14,71 +14,71 @@ public struct OperatorUsageWhitespaceRule: OptInRule, CorrectableRule, Configura
                      "when they are being used.",
         kind: .style,
         nonTriggeringExamples: [
-            "let foo = 1 + 2\n",
-            "let foo = 1 > 2\n",
-            "let foo = !false\n",
-            "let foo: Int?\n",
-            "let foo: Array<String>\n",
-            "let model = CustomView<Container<Button>, NSAttributedString>()\n",
-            "let foo: [String]\n",
-            "let foo = 1 + \n  2\n",
-            "let range = 1...3\n",
-            "let range = 1 ... 3\n",
-            "let range = 1..<3\n",
-            "#if swift(>=3.0)\n    foo()\n#endif\n",
-            "array.removeAtIndex(-200)\n",
-            "let name = \"image-1\"\n",
-            "button.setImage(#imageLiteral(resourceName: \"image-1\"), for: .normal)\n",
-            "let doubleValue = -9e-11\n",
-            "let foo = GenericType<(UIViewController) -> Void>()\n",
-            "let foo = Foo<Bar<T>, Baz>()\n",
-            "let foo = SignalProducer<Signal<Value, Error>, Error>([ self.signal, next ]).flatten(.concat)\n"
+            Example("let foo = 1 + 2\n"),
+            Example("let foo = 1 > 2\n"),
+            Example("let foo = !false\n"),
+            Example("let foo: Int?\n"),
+            Example("let foo: Array<String>\n"),
+            Example("let model = CustomView<Container<Button>, NSAttributedString>()\n"),
+            Example("let foo: [String]\n"),
+            Example("let foo = 1 + \n  2\n"),
+            Example("let range = 1...3\n"),
+            Example("let range = 1 ... 3\n"),
+            Example("let range = 1..<3\n"),
+            Example("#if swift(>=3.0)\n    foo()\n#endif\n"),
+            Example("array.removeAtIndex(-200)\n"),
+            Example("let name = \"image-1\"\n"),
+            Example("button.setImage(#imageLiteral(resourceName: \"image-1\"), for: .normal)\n"),
+            Example("let doubleValue = -9e-11\n"),
+            Example("let foo = GenericType<(UIViewController) -> Void>()\n"),
+            Example("let foo = Foo<Bar<T>, Baz>()\n"),
+            Example("let foo = SignalProducer<Signal<Value, Error>, Error>([ self.signal, next ]).flatten(.concat)\n")
         ],
         triggeringExamples: [
-            "let foo = 1↓+2\n",
-            "let foo = 1↓   + 2\n",
-            "let foo = 1↓   +    2\n",
-            "let foo = 1↓ +    2\n",
-            "let foo↓=1↓+2\n",
-            "let foo↓=1 + 2\n",
-            "let foo↓=bar\n",
-            "let range = 1↓ ..<  3\n",
-            "let foo = bar↓   ?? 0\n",
-            "let foo = bar↓??0\n",
-            "let foo = bar↓ !=  0\n",
-            "let foo = bar↓ !==  bar2\n",
-            "let v8 = Int8(1)↓  << 6\n",
-            "let v8 = 1↓ <<  (6)\n",
-            "let v8 = 1↓ <<  (6)\n let foo = 1 > 2\n"
+            Example("let foo = 1↓+2\n"),
+            Example("let foo = 1↓   + 2\n"),
+            Example("let foo = 1↓   +    2\n"),
+            Example("let foo = 1↓ +    2\n"),
+            Example("let foo↓=1↓+2\n"),
+            Example("let foo↓=1 + 2\n"),
+            Example("let foo↓=bar\n"),
+            Example("let range = 1↓ ..<  3\n"),
+            Example("let foo = bar↓   ?? 0\n"),
+            Example("let foo = bar↓??0\n"),
+            Example("let foo = bar↓ !=  0\n"),
+            Example("let foo = bar↓ !==  bar2\n"),
+            Example("let v8 = Int8(1)↓  << 6\n"),
+            Example("let v8 = 1↓ <<  (6)\n"),
+            Example("let v8 = 1↓ <<  (6)\n let foo = 1 > 2\n")
         ],
         corrections: [
-            "let foo = 1↓+2\n": "let foo = 1 + 2\n",
-            "let foo = 1↓   + 2\n": "let foo = 1 + 2\n",
-            "let foo = 1↓   +    2\n": "let foo = 1 + 2\n",
-            "let foo = 1↓ +    2\n": "let foo = 1 + 2\n",
-            "let foo↓=1↓+2\n": "let foo = 1 + 2\n",
-            "let foo↓=1 + 2\n": "let foo = 1 + 2\n",
-            "let foo↓=bar\n": "let foo = bar\n",
-            "let range = 1↓ ..<  3\n": "let range = 1..<3\n",
-            "let foo = bar↓   ?? 0\n": "let foo = bar ?? 0\n",
-            "let foo = bar↓??0\n": "let foo = bar ?? 0\n",
-            "let foo = bar↓ !=  0\n": "let foo = bar != 0\n",
-            "let foo = bar↓ !==  bar2\n": "let foo = bar !== bar2\n",
-            "let v8 = Int8(1)↓  << 6\n": "let v8 = Int8(1) << 6\n",
-            "let v8 = 1↓ <<  (6)\n": "let v8 = 1 << (6)\n",
-            "let v8 = 1↓ <<  (6)\n let foo = 1 > 2\n": "let v8 = 1 << (6)\n let foo = 1 > 2\n"
+            Example("let foo = 1↓+2\n"): Example("let foo = 1 + 2\n"),
+            Example("let foo = 1↓   + 2\n"): Example("let foo = 1 + 2\n"),
+            Example("let foo = 1↓   +    2\n"): Example("let foo = 1 + 2\n"),
+            Example("let foo = 1↓ +    2\n"): Example("let foo = 1 + 2\n"),
+            Example("let foo↓=1↓+2\n"): Example("let foo = 1 + 2\n"),
+            Example("let foo↓=1 + 2\n"): Example("let foo = 1 + 2\n"),
+            Example("let foo↓=bar\n"): Example("let foo = bar\n"),
+            Example("let range = 1↓ ..<  3\n"): Example("let range = 1..<3\n"),
+            Example("let foo = bar↓   ?? 0\n"): Example("let foo = bar ?? 0\n"),
+            Example("let foo = bar↓??0\n"): Example("let foo = bar ?? 0\n"),
+            Example("let foo = bar↓ !=  0\n"): Example("let foo = bar != 0\n"),
+            Example("let foo = bar↓ !==  bar2\n"): Example("let foo = bar !== bar2\n"),
+            Example("let v8 = Int8(1)↓  << 6\n"): Example("let v8 = Int8(1) << 6\n"),
+            Example("let v8 = 1↓ <<  (6)\n"): Example("let v8 = 1 << (6)\n"),
+            Example("let v8 = 1↓ <<  (6)\n let foo = 1 > 2\n"): Example("let v8 = 1 << (6)\n let foo = 1 > 2\n")
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         return violationRanges(file: file).map { range, _ in
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, characterOffset: range.location))
         }
     }
 
-    private func violationRanges(file: File) -> [(NSRange, String)] {
+    private func violationRanges(file: SwiftLintFile) -> [(NSRange, String)] {
         let escapedOperators = ["/", "=", "-", "+", "*", "|", "^", "~"].map({ "\\\($0)" }).joined()
         let rangePattern = "\\.\\.(?:\\.|<)" // ... or ..<
         let notEqualsPattern = "\\!\\=\\=?" // != or !==
@@ -138,8 +138,8 @@ public struct OperatorUsageWhitespaceRule: OptInRule, CorrectableRule, Configura
         }
     }
 
-    private func kinds(in range: NSRange, file: File) -> [SyntaxKind] {
-        let contents = file.contents.bridge()
+    private func kinds(in range: NSRange, file: SwiftLintFile) -> [SyntaxKind] {
+        let contents = file.stringView
         guard let byteRange = contents.NSRangeToByteRange(start: range.location, length: range.length) else {
             return []
         }
@@ -147,11 +147,11 @@ public struct OperatorUsageWhitespaceRule: OptInRule, CorrectableRule, Configura
         return file.syntaxMap.kinds(inByteRange: byteRange)
     }
 
-    private func operatorInRange(file: File, range: NSRange) -> String {
-        return file.contents.bridge().substring(with: range).trimmingCharacters(in: .whitespaces)
+    private func operatorInRange(file: SwiftLintFile, range: NSRange) -> String {
+        return file.stringView.substring(with: range).trimmingCharacters(in: .whitespaces)
     }
 
-    public func correct(file: File) -> [Correction] {
+    public func correct(file: SwiftLintFile) -> [Correction] {
         let violatingRanges = violationRanges(file: file).filter { range, _ in
             return !file.ruleEnabled(violatingRanges: [range], for: self).isEmpty
         }
@@ -170,7 +170,7 @@ public struct OperatorUsageWhitespaceRule: OptInRule, CorrectableRule, Configura
         file.write(correctedContents)
 
         return adjustedLocations.map {
-            Correction(ruleDescription: type(of: self).description,
+            Correction(ruleDescription: Self.description,
                        location: Location(file: file, characterOffset: $0))
         }
     }

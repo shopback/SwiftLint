@@ -11,33 +11,33 @@ public struct FatalErrorMessageRule: ASTRule, ConfigurationProviderRule, OptInRu
         description: "A fatalError call should have a message.",
         kind: .idiomatic,
         nonTriggeringExamples: [
-            """
+            Example("""
             func foo() {
               fatalError("Foo")
             }
-            """,
-            """
+            """),
+            Example("""
             func foo() {
               fatalError(x)
             }
-            """
+            """)
         ],
         triggeringExamples: [
-            """
+            Example("""
             func foo() {
               ↓fatalError("")
             }
-            """,
-            """
+            """),
+            Example("""
             func foo() {
               ↓fatalError()
             }
-            """
+            """)
         ]
     )
 
-    public func validate(file: File, kind: SwiftExpressionKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftExpressionKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard kind == .call,
             let offset = dictionary.offset,
             dictionary.name == "fatalError",
@@ -46,23 +46,22 @@ public struct FatalErrorMessageRule: ASTRule, ConfigurationProviderRule, OptInRu
         }
 
         return [
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, byteOffset: offset))
         ]
     }
 
-    private func hasEmptyBody(dictionary: [String: SourceKitRepresentable], file: File) -> Bool {
-        guard let bodyOffset = dictionary.bodyOffset,
-            let bodyLength = dictionary.bodyLength else {
-                return false
+    private func hasEmptyBody(dictionary: SourceKittenDictionary, file: SwiftLintFile) -> Bool {
+        guard let bodyRange = dictionary.bodyByteRange else {
+            return false
         }
 
-        if bodyLength == 0 {
+        if bodyRange.length == 0 {
             return true
         }
 
-        let body = file.contents.bridge().substringWithByteRange(start: bodyOffset, length: bodyLength)
+        let body = file.stringView.substringWithByteRange(bodyRange)
         return body == "\"\""
     }
 }

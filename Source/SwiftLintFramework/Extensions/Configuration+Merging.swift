@@ -2,7 +2,13 @@ import Foundation
 import SourceKittenFramework
 
 extension Configuration {
-    public func configuration(for file: File) -> Configuration {
+    /// Returns a new configuration that applies to the specified file by merging the current configuration with any
+    /// child configurations in the directory inheritance graph present until the level of the specified file.
+    ///
+    /// - parameter file: The file for which to obtain a configuration value.
+    ///
+    /// - returns: A new configuration.
+    public func configuration(for file: SwiftLintFile) -> Configuration {
         if let containingDir = file.path?.bridge().deletingLastPathComponent {
             return configuration(forPath: containingDir)
         }
@@ -151,7 +157,8 @@ extension Configuration {
             rules: mergingRules(with: configuration),
             cachePath: cachePath, // Always use the parent cache path
             rootPath: configuration.rootPath,
-            indentation: configuration.indentation
+            indentation: configuration.indentation,
+            allowZeroLintableFiles: configuration.allowZeroLintableFiles
         )
     }
 }

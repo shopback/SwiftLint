@@ -1,4 +1,3 @@
-import Foundation
 import SourceKittenFramework
 
 public struct LastWhereRule: CallPairRule, OptInRule, ConfigurationProviderRule, AutomaticTestableRule {
@@ -13,24 +12,24 @@ public struct LastWhereRule: CallPairRule, OptInRule, ConfigurationProviderRule,
         kind: .performance,
         minSwiftVersion: .fourDotTwo,
         nonTriggeringExamples: [
-            "kinds.filter(excludingKinds.contains).isEmpty && kinds.last == .identifier\n",
-            "myList.last(where: { $0 % 2 == 0 })\n",
-            "match(pattern: pattern).filter { $0.last == .identifier }\n",
-            "(myList.filter { $0 == 1 }.suffix(2)).last\n",
-            "collection.filter(\"stringCol = '3'\").last"
+            Example("kinds.filter(excludingKinds.contains).isEmpty && kinds.last == .identifier\n"),
+            Example("myList.last(where: { $0 % 2 == 0 })\n"),
+            Example("match(pattern: pattern).filter { $0.last == .identifier }\n"),
+            Example("(myList.filter { $0 == 1 }.suffix(2)).last\n"),
+            Example("collection.filter(\"stringCol = '3'\").last")
         ],
         triggeringExamples: [
-            "↓myList.filter { $0 % 2 == 0 }.last\n",
-            "↓myList.filter({ $0 % 2 == 0 }).last\n",
-            "↓myList.map { $0 + 1 }.filter({ $0 % 2 == 0 }).last\n",
-            "↓myList.map { $0 + 1 }.filter({ $0 % 2 == 0 }).last?.something()\n",
-            "↓myList.filter(someFunction).last\n",
-            "↓myList.filter({ $0 % 2 == 0 })\n.last\n",
-            "(↓myList.filter { $0 == 1 }).last\n"
+            Example("↓myList.filter { $0 % 2 == 0 }.last\n"),
+            Example("↓myList.filter({ $0 % 2 == 0 }).last\n"),
+            Example("↓myList.map { $0 + 1 }.filter({ $0 % 2 == 0 }).last\n"),
+            Example("↓myList.map { $0 + 1 }.filter({ $0 % 2 == 0 }).last?.something()\n"),
+            Example("↓myList.filter(someFunction).last\n"),
+            Example("↓myList.filter({ $0 % 2 == 0 })\n.last\n"),
+            Example("(↓myList.filter { $0 == 1 }).last\n")
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         return validate(file: file,
                         pattern: "[\\}\\)]\\s*\\.last",
                         patternSyntaxKinds: [.identifier],
@@ -40,11 +39,11 @@ public struct LastWhereRule: CallPairRule, OptInRule, ConfigurationProviderRule,
                 return true // has a substructure, like a closure
             }
 
-            guard let bodyOffset = dictionary.bodyOffset, let bodyLength = dictionary.bodyLength else {
+            guard let bodyRange = dictionary.bodyByteRange else {
                 return true
             }
 
-            let syntaxKinds = file.syntaxMap.kinds(inByteRange: NSRange(location: bodyOffset, length: bodyLength))
+            let syntaxKinds = file.syntaxMap.kinds(inByteRange: bodyRange)
             return !syntaxKinds.contains(.string)
         }
     }

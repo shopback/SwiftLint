@@ -1,4 +1,3 @@
-import Foundation
 import SourceKittenFramework
 
 public struct ObjectLiteralRule: ASTRule, ConfigurationProviderRule, OptInRule {
@@ -12,29 +11,30 @@ public struct ObjectLiteralRule: ASTRule, ConfigurationProviderRule, OptInRule {
         description: "Prefer object literals over image and color inits.",
         kind: .idiomatic,
         nonTriggeringExamples: [
-            "let image = #imageLiteral(resourceName: \"image.jpg\")",
-            "let color = #colorLiteral(red: 0.9607843161, green: 0.7058823705, blue: 0.200000003, alpha: 1)",
-            "let image = UIImage(named: aVariable)",
-            "let image = UIImage(named: \"interpolated \\(variable)\")",
-            "let color = UIColor(red: value, green: value, blue: value, alpha: 1)",
-            "let image = NSImage(named: aVariable)",
-            "let image = NSImage(named: \"interpolated \\(variable)\")",
-            "let color = NSColor(red: value, green: value, blue: value, alpha: 1)"
+            Example("let image = #imageLiteral(resourceName: \"image.jpg\")"),
+            Example("let color = #colorLiteral(red: 0.9607843161, green: 0.7058823705, blue: 0.200000003, alpha: 1)"),
+            Example("let image = UIImage(named: aVariable)"),
+            Example("let image = UIImage(named: \"interpolated \\(variable)\")"),
+            Example("let color = UIColor(red: value, green: value, blue: value, alpha: 1)"),
+            Example("let image = NSImage(named: aVariable)"),
+            Example("let image = NSImage(named: \"interpolated \\(variable)\")"),
+            Example("let color = NSColor(red: value, green: value, blue: value, alpha: 1)")
         ],
-        triggeringExamples: ["", ".init"].flatMap { (method: String) -> [String] in
-            ["UI", "NS"].flatMap { (prefix: String) -> [String] in
+        triggeringExamples: ["", ".init"].flatMap { (method: String) -> [Example] in
+            ["UI", "NS"].flatMap { (prefix: String) -> [Example] in
                 [
-                    "let image = ↓\(prefix)Image\(method)(named: \"foo\")",
-                    "let color = ↓\(prefix)Color\(method)(red: 0.3, green: 0.3, blue: 0.3, alpha: 1)",
-                    "let color = ↓\(prefix)Color\(method)(red: 100 / 255.0, green: 50 / 255.0, blue: 0, alpha: 1)",
-                    "let color = ↓\(prefix)Color\(method)(white: 0.5, alpha: 1)"
+                    Example("let image = ↓\(prefix)Image\(method)(named: \"foo\")"),
+                    Example("let color = ↓\(prefix)Color\(method)(red: 0.3, green: 0.3, blue: 0.3, alpha: 1)"),
+                    // swiftlint:disable:next line_length
+                    Example("let color = ↓\(prefix)Color\(method)(red: 100 / 255.0, green: 50 / 255.0, blue: 0, alpha: 1)"),
+                    Example("let color = ↓\(prefix)Color\(method)(white: 0.5, alpha: 1)")
                 ]
             }
         }
     )
 
-    public func validate(file: File, kind: SwiftExpressionKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftExpressionKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard kind == .call,
             let offset = dictionary.offset,
             (configuration.imageLiteral && isImageNamedInit(dictionary: dictionary, file: file)) ||
@@ -43,13 +43,13 @@ public struct ObjectLiteralRule: ASTRule, ConfigurationProviderRule, OptInRule {
         }
 
         return [
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severityConfiguration.severity,
                            location: Location(file: file, byteOffset: offset))
         ]
     }
 
-    private func isImageNamedInit(dictionary: [String: SourceKitRepresentable], file: File) -> Bool {
+    private func isImageNamedInit(dictionary: SourceKittenDictionary, file: SwiftLintFile) -> Bool {
         guard let name = dictionary.name,
             inits(forClasses: ["UIImage", "NSImage"]).contains(name),
             case let arguments = dictionary.enclosedArguments,
@@ -63,7 +63,7 @@ public struct ObjectLiteralRule: ASTRule, ConfigurationProviderRule, OptInRule {
         return true
     }
 
-    private func isColorInit(dictionary: [String: SourceKitRepresentable], file: File) -> Bool {
+    private func isColorInit(dictionary: SourceKittenDictionary, file: SwiftLintFile) -> Bool {
         guard let name = dictionary.name,
             inits(forClasses: ["UIColor", "NSColor"]).contains(name),
             case let arguments = dictionary.enclosedArguments,
@@ -85,7 +85,7 @@ public struct ObjectLiteralRule: ASTRule, ConfigurationProviderRule, OptInRule {
         }
     }
 
-    private func validateColorKinds(arguments: [[String: SourceKitRepresentable]], file: File) -> Bool {
+    private func validateColorKinds(arguments: [SourceKittenDictionary], file: SwiftLintFile) -> Bool {
         for dictionary in arguments where kinds(forArgument: dictionary, file: file) != [.number] {
             return false
         }
@@ -93,12 +93,7 @@ public struct ObjectLiteralRule: ASTRule, ConfigurationProviderRule, OptInRule {
         return true
     }
 
-    private func kinds(forArgument argument: [String: SourceKitRepresentable], file: File) -> Set<SyntaxKind> {
-        guard let offset = argument.bodyOffset, let length = argument.bodyLength else {
-            return []
-        }
-
-        let range = NSRange(location: offset, length: length)
-        return Set(file.syntaxMap.kinds(inByteRange: range))
+    private func kinds(forArgument argument: SourceKittenDictionary, file: SwiftLintFile) -> Set<SyntaxKind> {
+        return argument.bodyByteRange.map { Set(file.syntaxMap.kinds(inByteRange: $0)) } ?? []
     }
 }

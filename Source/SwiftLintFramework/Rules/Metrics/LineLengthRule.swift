@@ -16,18 +16,18 @@ public struct LineLengthRule: ConfigurationProviderRule {
         description: "Lines should not span too many characters.",
         kind: .metrics,
         nonTriggeringExamples: [
-            String(repeating: "/", count: 120) + "\n",
-            String(repeating: "#colorLiteral(red: 0.9607843161, green: 0.7058823705, blue: 0.200000003, alpha: 1)", count: 120) + "\n",
-            String(repeating: "#imageLiteral(resourceName: \"image.jpg\")", count: 120) + "\n"
+            Example(String(repeating: "/", count: 120) + "\n"),
+            Example(String(repeating: "#colorLiteral(red: 0.9607843161, green: 0.7058823705, blue: 0.200000003, alpha: 1)", count: 120) + "\n"),
+            Example(String(repeating: "#imageLiteral(resourceName: \"image.jpg\")", count: 120) + "\n")
         ],
         triggeringExamples: [
-            String(repeating: "/", count: 121) + "\n",
-            String(repeating: "#colorLiteral(red: 0.9607843161, green: 0.7058823705, blue: 0.200000003, alpha: 1)", count: 121) + "\n",
-            String(repeating: "#imageLiteral(resourceName: \"image.jpg\")", count: 121) + "\n"
+            Example(String(repeating: "/", count: 121) + "\n"),
+            Example(String(repeating: "#colorLiteral(red: 0.9607843161, green: 0.7058823705, blue: 0.200000003, alpha: 1)", count: 121) + "\n"),
+            Example(String(repeating: "#imageLiteral(resourceName: \"image.jpg\")", count: 121) + "\n")
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
         let minValue = configuration.params.map({ $0.value }).min() ?? .max
         let swiftDeclarationKindsByLine = Lazy(file.swiftDeclarationKindsByLine() ?? [])
         let syntaxKindsByLine = Lazy(file.syntaxKindsByLine() ?? [])
@@ -78,7 +78,7 @@ public struct LineLengthRule: ConfigurationProviderRule {
             for param in configuration.params where length > param.value {
                 let reason = "Line should be \(configuration.length.warning) characters or less: " +
                              "currently \(length) characters"
-                return StyleViolation(ruleDescription: type(of: self).description,
+                return StyleViolation(ruleDescription: Self.description,
                                       severity: param.severity,
                                       location: Location(file: file.path, line: line.index),
                                       reason: reason)
@@ -91,7 +91,7 @@ public struct LineLengthRule: ConfigurationProviderRule {
     ///
     /// - parameter sourceString: Original string, possibly containing literals
     /// - parameter delimiter:    Delimiter of the literal
-    ///     (characters before the parentheses, e.g. `#colorLiteral`)
+    ///                           (characters before the parentheses, e.g. `#colorLiteral`)
     ///
     /// - returns: sourceString with the given literals replaced by `#`
     private func stripLiterals(fromSourceString sourceString: String,
@@ -136,7 +136,7 @@ private class Lazy<Result> {
 
 private extension String {
     var strippingURLs: String {
-        let range = NSRange(location: 0, length: bridge().length)
+        let range = fullNSRange
         // Workaround for Linux until NSDataDetector is available
         #if os(Linux)
             // Regex pattern from http://daringfireball.net/2010/07/improved_regex_for_matching_urls

@@ -23,8 +23,8 @@ public struct IdentifierNameRule: ASTRule, ConfigurationProviderRule {
         deprecatedAliases: ["variable_name"]
     )
 
-    public func validate(file: File, kind: SwiftDeclarationKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftDeclarationKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard !dictionary.enclosedSwiftAttributes.contains(.override) else {
             return []
         }
@@ -35,12 +35,12 @@ public struct IdentifierNameRule: ASTRule, ConfigurationProviderRule {
             }
 
             let isFunction = SwiftDeclarationKind.functionKinds.contains(kind)
-            let description = Swift.type(of: self).description
+            let description = Self.description
 
             let type = self.type(for: kind)
             if !isFunction {
                 let allowedSymbols = configuration.allowedSymbols.union(.alphanumerics)
-                if !allowedSymbols.isSuperset(of: CharacterSet(safeCharactersIn: name)) {
+                if !allowedSymbols.isSuperset(of: CharacterSet(charactersIn: name)) {
                     return [
                         StyleViolation(ruleDescription: description,
                                        severity: .error,
@@ -55,7 +55,7 @@ public struct IdentifierNameRule: ASTRule, ConfigurationProviderRule {
                         "\(configuration.minLengthThreshold) and " +
                         "\(configuration.maxLengthThreshold) characters long: '\(name)'"
                     return [
-                        StyleViolation(ruleDescription: Swift.type(of: self).description,
+                        StyleViolation(ruleDescription: Self.description,
                                        severity: severity,
                                        location: Location(file: file, byteOffset: offset),
                                        reason: reason)
@@ -79,8 +79,8 @@ public struct IdentifierNameRule: ASTRule, ConfigurationProviderRule {
         } ?? []
     }
 
-    private func validateName(dictionary: [String: SourceKitRepresentable],
-                              kind: SwiftDeclarationKind) -> (name: String, offset: Int)? {
+    private func validateName(dictionary: SourceKittenDictionary,
+                              kind: SwiftDeclarationKind) -> (name: String, offset: ByteCount)? {
         guard var name = dictionary.name,
             let offset = dictionary.offset,
             kinds.contains(kind),
@@ -131,6 +131,6 @@ private extension String {
 
     var isOperator: Bool {
         let operators = ["/", "=", "-", "+", "!", "*", "|", "^", "~", "?", ".", "%", "<", ">", "&"]
-        return !operators.filter(hasPrefix).isEmpty
+        return operators.contains(where: hasPrefix)
     }
 }

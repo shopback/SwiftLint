@@ -12,26 +12,30 @@ public struct MultipleClosuresWithTrailingClosureRule: ASTRule, ConfigurationPro
         description: "Trailing closure syntax should not be used when passing more than one closure argument.",
         kind: .style,
         nonTriggeringExamples: [
-            "foo.map { $0 + 1 }\n",
-            "foo.reduce(0) { $0 + $1 }\n",
-            "if let foo = bar.map({ $0 + 1 }) {\n\n}\n",
-            "foo.something(param1: { $0 }, param2: { $0 + 1 })\n",
-            "UIView.animate(withDuration: 1.0) {\n" +
-            "    someView.alpha = 0.0\n" +
-            "}"
+            Example("foo.map { $0 + 1 }\n"),
+            Example("foo.reduce(0) { $0 + $1 }\n"),
+            Example("if let foo = bar.map({ $0 + 1 }) {\n\n}\n"),
+            Example("foo.something(param1: { $0 }, param2: { $0 + 1 })\n"),
+            Example("""
+            UIView.animate(withDuration: 1.0) {
+                someView.alpha = 0.0
+            }
+            """)
         ],
         triggeringExamples: [
-            "foo.something(param1: { $0 }) ↓{ $0 + 1 }",
-            "UIView.animate(withDuration: 1.0, animations: {\n" +
-            "    someView.alpha = 0.0\n" +
-            "}) ↓{ _ in\n" +
-            "    someView.removeFromSuperview()\n" +
-            "}"
+            Example("foo.something(param1: { $0 }) ↓{ $0 + 1 }"),
+            Example("""
+            UIView.animate(withDuration: 1.0, animations: {
+                someView.alpha = 0.0
+            }) ↓{ _ in
+                someView.removeFromSuperview()
+            }
+            """)
         ]
     )
 
-    public func validate(file: File, kind: SwiftExpressionKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftExpressionKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard kind == .call,
             case let arguments = dictionary.enclosedArguments,
             arguments.count > 1,
@@ -44,14 +48,14 @@ public struct MultipleClosuresWithTrailingClosureRule: ASTRule, ConfigurationPro
         }
 
         return [
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, byteOffset: trailingClosureOffset))
         ]
     }
 
-    private func isTrailingClosure(argument: [String: SourceKitRepresentable],
-                                   call: [String: SourceKitRepresentable]) -> Bool {
+    private func isTrailingClosure(argument: SourceKittenDictionary,
+                                   call: SourceKittenDictionary) -> Bool {
         guard let callOffset = call.offset,
             let callLength = call.length,
             let argumentOffset = argument.offset,
@@ -63,16 +67,16 @@ public struct MultipleClosuresWithTrailingClosureRule: ASTRule, ConfigurationPro
     }
 }
 
-private extension Array where Element == [String: SourceKitRepresentable] {
-    func filterClosures(file: File) -> [[String: SourceKitRepresentable]] {
+private extension Array where Element == SourceKittenDictionary {
+    func filterClosures(file: SwiftLintFile) -> [SourceKittenDictionary] {
         if SwiftVersion.current < .fourDotTwo {
             return filter { argument in
-                guard let offset = argument.bodyOffset,
-                    let length = argument.bodyLength,
-                    let range = file.contents.bridge().byteRangeToNSRange(start: offset, length: length),
+                guard let bodyByteRange = argument.bodyByteRange,
+                    let range = file.stringView.byteRangeToNSRange(bodyByteRange),
                     let match = regex("^\\s*\\{").firstMatch(in: file.contents, options: [], range: range)?.range,
-                    match.location == range.location else {
-                        return false
+                    match.location == range.location
+                else {
+                    return false
                 }
 
                 return true
@@ -80,7 +84,7 @@ private extension Array where Element == [String: SourceKitRepresentable] {
         } else {
             return filter { argument in
                 return argument.substructure.contains(where: { dictionary in
-                    dictionary.kind.flatMap(SwiftExpressionKind.init(rawValue:)) == .closure
+                    dictionary.expressionKind == .closure
                 })
             }
         }

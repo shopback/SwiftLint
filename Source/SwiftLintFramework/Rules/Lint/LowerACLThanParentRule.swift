@@ -11,45 +11,45 @@ public struct LowerACLThanParentRule: OptInRule, ConfigurationProviderRule, Auto
         description: "Ensure definitions have a lower access control level than their enclosing parent",
         kind: .lint,
         nonTriggeringExamples: [
-            "public struct Foo { public func bar() {} }",
-            "internal struct Foo { func bar() {} }",
-            "struct Foo { func bar() {} }",
-            "open class Foo { public func bar() {} }",
-            "open class Foo { open func bar() {} }",
-            "fileprivate struct Foo { private func bar() {} }",
-            "private struct Foo { private func bar(id: String) }",
-            "extension Foo { public func bar() {} }",
-            "private struct Foo { fileprivate func bar() {} }",
-            "private func foo(id: String) {}",
-            "private class Foo { func bar() {} }"
+            Example("public struct Foo { public func bar() {} }"),
+            Example("internal struct Foo { func bar() {} }"),
+            Example("struct Foo { func bar() {} }"),
+            Example("open class Foo { public func bar() {} }"),
+            Example("open class Foo { open func bar() {} }"),
+            Example("fileprivate struct Foo { private func bar() {} }"),
+            Example("private struct Foo { private func bar(id: String) }"),
+            Example("extension Foo { public func bar() {} }"),
+            Example("private struct Foo { fileprivate func bar() {} }"),
+            Example("private func foo(id: String) {}"),
+            Example("private class Foo { func bar() {} }")
         ],
         triggeringExamples: [
-            "struct Foo { public ↓func bar() {} }",
-            "enum Foo { public ↓func bar() {} }",
-            "public class Foo { open ↓func bar() }",
-            "class Foo { public private(set) ↓var bar: String? }",
-            "private class Foo { internal ↓func bar() {} }"
+            Example("struct Foo { public ↓func bar() {} }"),
+            Example("enum Foo { public ↓func bar() {} }"),
+            Example("public class Foo { open ↓func bar() }"),
+            Example("class Foo { public private(set) ↓var bar: String? }"),
+            Example("private class Foo { internal ↓func bar() {} }")
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
-        return validateACL(isHigherThan: .open, in: file.structure.dictionary).map {
-            StyleViolation(ruleDescription: type(of: self).description,
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
+        return validateACL(isHigherThan: .open, in: file.structureDictionary).map {
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, byteOffset: $0))
         }
     }
 
     private func validateACL(isHigherThan parentAccessibility: AccessControlLevel,
-                             in substructure: [String: SourceKitRepresentable]) -> [Int] {
-        return substructure.substructure.flatMap { element -> [Int] in
-            guard let elementKind = element.kind.flatMap(SwiftDeclarationKind.init),
+                             in substructure: SourceKittenDictionary) -> [ByteCount] {
+        return substructure.substructure.flatMap { element -> [ByteCount] in
+            guard let elementKind = element.declarationKind,
                 elementKind.isRelevantDeclaration else {
                 return []
             }
 
-            var violationOffset: Int?
-            let accessibility = element.accessibility.flatMap(AccessControlLevel.init(identifier:)) ?? .internal
+            var violationOffset: ByteCount?
+            let accessibility = element.accessibility ?? .internal
             // Swift 5 infers members of private types with no explicit ACL attribute to be `internal`.
             let isInferredACL = accessibility == .internal && !element.enclosedSwiftAttributes.contains(.internal)
             if !isInferredACL, accessibility.priority > parentAccessibility.priority {
@@ -66,9 +66,9 @@ private extension SwiftDeclarationKind {
         switch self {
         case .associatedtype, .enumcase, .enumelement, .extension, .extensionClass, .extensionEnum,
              .extensionProtocol, .extensionStruct, .functionAccessorAddress, .functionAccessorDidset,
-             .functionAccessorGetter, .functionAccessorMutableaddress, .functionAccessorSetter,
-             .functionAccessorWillset, .functionDestructor, .genericTypeParam, .module, .precedenceGroup, .varLocal,
-             .varParameter:
+             .functionAccessorRead, .functionAccessorModify, .functionAccessorGetter,
+             .functionAccessorMutableaddress, .functionAccessorSetter, .functionAccessorWillset,
+             .functionDestructor, .genericTypeParam, .module, .precedenceGroup, .varLocal, .varParameter, .opaqueType:
             return false
         case .class, .enum, .functionConstructor, .functionFree, .functionMethodClass, .functionMethodInstance,
              .functionMethodStatic, .functionOperator, .functionOperatorInfix, .functionOperatorPostfix,

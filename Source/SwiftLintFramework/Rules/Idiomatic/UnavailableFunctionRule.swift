@@ -13,15 +13,15 @@ public struct UnavailableFunctionRule: ASTRule, ConfigurationProviderRule, OptIn
         kind: .idiomatic,
         minSwiftVersion: .fourDotOne,
         nonTriggeringExamples: [
-            """
+            Example("""
             class ViewController: UIViewController {
               @available(*, unavailable)
               public required init?(coder aDecoder: NSCoder) {
                 fatalError("init(coder:) has not been implemented")
               }
             }
-            """,
-            """
+            """),
+            Example("""
             func jsonValue(_ jsonString: String) -> NSObject {
                let data = jsonString.data(using: .utf8)!
                let result = try! JSONSerialization.jsonObject(with: data, options: [])
@@ -32,57 +32,57 @@ public struct UnavailableFunctionRule: ASTRule, ConfigurationProviderRule, OptIn
                }
                fatalError()
             }
-            """
+            """)
         ],
         triggeringExamples: [
-            """
+            Example("""
             class ViewController: UIViewController {
               public required ↓init?(coder aDecoder: NSCoder) {
                 fatalError("init(coder:) has not been implemented")
               }
             }
-            """,
-            """
+            """),
+            Example("""
             class ViewController: UIViewController {
               public required ↓init?(coder aDecoder: NSCoder) {
                 let reason = "init(coder:) has not been implemented"
                 fatalError(reason)
               }
             }
-            """
+            """)
         ]
     )
 
-    public func validate(file: File, kind: SwiftDeclarationKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftDeclarationKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard SwiftDeclarationKind.functionKinds.contains(kind) else {
             return []
         }
 
         let containsFatalError = dictionary.substructure.contains { dict -> Bool in
-            return dict.kind.flatMap(SwiftExpressionKind.init(rawValue:)) == .call && dict.name == "fatalError"
+            return dict.expressionKind == .call && dict.name == "fatalError"
         }
 
         guard let offset = dictionary.offset, containsFatalError,
             !isFunctionUnavailable(file: file, dictionary: dictionary),
-            let bodyOffset = dictionary.bodyOffset, let bodyLength = dictionary.bodyLength,
-            let range = file.contents.bridge().byteRangeToNSRange(start: bodyOffset, length: bodyLength),
+            let bodyRange = dictionary.bodyByteRange,
+            let range = file.stringView.byteRangeToNSRange(bodyRange),
             file.match(pattern: "\\breturn\\b", with: [.keyword], range: range).isEmpty else {
                 return []
         }
 
         return [
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, byteOffset: offset))
         ]
     }
 
-    private func isFunctionUnavailable(file: File, dictionary: [String: SourceKitRepresentable]) -> Bool {
+    private func isFunctionUnavailable(file: SwiftLintFile, dictionary: SourceKittenDictionary) -> Bool {
         return dictionary.swiftAttributes.contains { dict -> Bool in
             guard dict.attribute.flatMap(SwiftDeclarationAttributeKind.init(rawValue:)) == .available,
-                let offset = dict.offset, let length = dict.length,
-                let contents = file.contents.bridge().substringWithByteRange(start: offset, length: length) else {
+                let byteRange = dict.byteRange,
+                let contents = file.stringView.substringWithByteRange(byteRange) else {
                     return false
             }
 

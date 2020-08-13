@@ -12,74 +12,104 @@ public struct VerticalParameterAlignmentOnCallRule: ASTRule, ConfigurationProvid
         description: "Function parameters should be aligned vertically if they're in multiple lines in a method call.",
         kind: .style,
         nonTriggeringExamples: [
-            "foo(param1: 1, param2: bar\n" +
-            "    param3: false, param4: true)",
-            "foo(param1: 1, param2: bar)",
-            "foo(param1: 1, param2: bar\n" +
-            "    param3: false,\n" +
-            "    param4: true)",
-            "foo(\n" +
-            "   param1: 1\n" +
-            ") { _ in }",
-            "UIView.animate(withDuration: 0.4, animations: {\n" +
-            "    blurredImageView.alpha = 1\n" +
-            "}, completion: { _ in\n" +
-            "    self.hideLoading()\n" +
-            "})",
-            "UIView.animate(withDuration: 0.4, animations: {\n" +
-            "    blurredImageView.alpha = 1\n" +
-            "},\n" +
-            "completion: { _ in\n" +
-            "    self.hideLoading()\n" +
-            "})",
-            "foo(param1: 1, param2: { _ in },\n" +
-            "    param3: false, param4: true)",
-            "foo({ _ in\n" +
-            "       bar()\n" +
-            "   },\n" +
-            "   completion: { _ in\n" +
-            "       baz()\n" +
-            "   }\n" +
-            ")",
-            "foo(param1: 1, param2: [\n" +
-            "   0,\n" +
-            "   1\n" +
-            "], param3: 0)",
-            """
+            Example("""
+            foo(param1: 1, param2: bar
+                param3: false, param4: true)
+            """),
+            Example("""
+            foo(param1: 1, param2: bar)
+            """),
+            Example("""
+            foo(param1: 1, param2: bar
+                param3: false,
+                param4: true)
+            """),
+            Example("""
+            foo(
+               param1: 1
+            ) { _ in }
+            """),
+            Example("""
+            UIView.animate(withDuration: 0.4, animations: {
+                blurredImageView.alpha = 1
+            }, completion: { _ in
+                self.hideLoading()
+            })
+            """),
+            Example("""
+            UIView.animate(withDuration: 0.4, animations: {
+                blurredImageView.alpha = 1
+            },
+            completion: { _ in
+                self.hideLoading()
+            })
+            """),
+            Example("""
+            foo(param1: 1, param2: { _ in },
+                param3: false, param4: true)
+            """),
+            Example("""
+            foo({ _ in
+                   bar()
+               },
+               completion: { _ in
+                   baz()
+               }
+            )
+            """),
+            Example("""
+            foo(param1: 1, param2: [
+               0,
+               1
+            ], param3: 0)
+            """),
+            Example("""
             myFunc(foo: 0,
                    bar: baz == 0)
-            """
+            """)
         ],
         triggeringExamples: [
-            "foo(param1: 1, param2: bar\n" +
-            "                ↓param3: false, param4: true)",
-            "foo(param1: 1, param2: bar\n" +
-            " ↓param3: false, param4: true)",
-            "foo(param1: 1, param2: bar\n" +
-            "       ↓param3: false,\n" +
-            "       ↓param4: true)",
-            "foo(param1: 1,\n" +
-            "       ↓param2: { _ in })",
-            "foo(param1: 1,\n" +
-            "    param2: { _ in\n" +
-            "}, param3: 2,\n" +
-            " ↓param4: 0)",
-            "foo(param1: 1, param2: { _ in },\n" +
-            "       ↓param3: false, param4: true)",
-            """
+            Example("""
+            foo(param1: 1, param2: bar
+                            ↓param3: false, param4: true)
+            """),
+            Example("""
+            foo(param1: 1, param2: bar
+             ↓param3: false, param4: true)
+            """),
+            Example("""
+            foo(param1: 1, param2: bar
+                   ↓param3: false,
+                   ↓param4: true)
+            """),
+            Example("""
+            foo(param1: 1,
+                   ↓param2: { _ in })
+            """),
+            Example("""
+            foo(param1: 1,
+                param2: { _ in
+            }, param3: 2,
+             ↓param4: 0)
+            """),
+            Example("""
+            foo(param1: 1, param2: { _ in },
+                   ↓param3: false, param4: true)
+            """),
+            Example("""
             myFunc(foo: 0,
                     ↓bar: baz == 0)
-            """
+            """)
         ]
     )
 
-    public func validate(file: File, kind: SwiftExpressionKind,
-                         dictionary: [String: SourceKitRepresentable]) -> [StyleViolation] {
+    public func validate(file: SwiftLintFile, kind: SwiftExpressionKind,
+                         dictionary: SourceKittenDictionary) -> [StyleViolation] {
         guard kind == .call,
             case let arguments = dictionary.enclosedArguments,
             arguments.count > 1,
             let firstArgumentOffset = arguments.first?.offset,
-            case let contents = file.contents.bridge(),
+            case let contents = file.stringView,
             var firstArgumentPosition = contents.lineAndCharacter(forByteOffset: firstArgumentOffset) else {
                 return []
         }
@@ -88,7 +118,7 @@ public struct VerticalParameterAlignmentOnCallRule: ASTRule, ConfigurationProvid
         var previousArgumentWasMultiline = false
 
         let lastIndex = arguments.count - 1
-        let violatingOffsets: [Int] = arguments.enumerated().compactMap { idx, argument in
+        let violatingOffsets: [ByteCount] = arguments.enumerated().compactMap { idx, argument in
             defer {
                 previousArgumentWasMultiline = isMultiline(argument: argument, file: file)
             }
@@ -120,30 +150,33 @@ public struct VerticalParameterAlignmentOnCallRule: ASTRule, ConfigurationProvid
         }
 
         return violatingOffsets.map {
-            StyleViolation(ruleDescription: type(of: self).description,
+            StyleViolation(ruleDescription: Self.description,
                            severity: configuration.severity,
                            location: Location(file: file, byteOffset: $0))
         }
     }
 
-    private func isMultiline(argument: [String: SourceKitRepresentable], file: File) -> Bool {
+    private func isMultiline(argument: SourceKittenDictionary, file: SwiftLintFile) -> Bool {
         guard let offset = argument.bodyOffset,
             let length = argument.bodyLength,
-            case let contents = file.contents.bridge(),
+            case let contents = file.stringView,
             let (startLine, _) = contents.lineAndCharacter(forByteOffset: offset),
-            let (endLine, _) = contents.lineAndCharacter(forByteOffset: offset + length) else {
-                return false
+            let (endLine, _) = contents.lineAndCharacter(forByteOffset: offset + length)
+        else {
+            return false
         }
 
         return endLine > startLine
     }
 
-    private func isTrailingClosure(dictionary: [String: SourceKitRepresentable], file: File) -> Bool {
+    private func isTrailingClosure(dictionary: SourceKittenDictionary, file: SwiftLintFile) -> Bool {
         guard let offset = dictionary.offset,
             let length = dictionary.length,
             case let start = min(offset, offset + length - 1),
-            let text = file.contents.bridge().substringWithByteRange(start: start, length: length) else {
-                return false
+            case let byteRange = ByteRange(location: start, length: length),
+            let text = file.stringView.substringWithByteRange(byteRange)
+        else {
+            return false
         }
 
         return !text.hasSuffix(")")

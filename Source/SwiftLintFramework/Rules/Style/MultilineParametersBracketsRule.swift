@@ -12,34 +12,34 @@ public struct MultilineParametersBracketsRule: OptInRule, ConfigurationProviderR
         description: "Multiline parameters should have their surrounding brackets in a new line.",
         kind: .style,
         nonTriggeringExamples: [
-            """
+            Example("""
             func foo(param1: String, param2: String, param3: String)
-            """,
-            """
+            """),
+            Example("""
             func foo(
                 param1: String, param2: String, param3: String
             )
-            """,
-            """
+            """),
+            Example("""
             func foo(
                 param1: String,
                 param2: String,
                 param3: String
             )
-            """,
-            """
+            """),
+            Example("""
             class SomeType {
                 func foo(param1: String, param2: String, param3: String)
             }
-            """,
-            """
+            """),
+            Example("""
             class SomeType {
                 func foo(
                     param1: String, param2: String, param3: String
                 )
             }
-            """,
-            """
+            """),
+            Example("""
             class SomeType {
                 func foo(
                     param1: String,
@@ -47,67 +47,78 @@ public struct MultilineParametersBracketsRule: OptInRule, ConfigurationProviderR
                     param3: String
                 )
             }
-            """,
-            """
+            """),
+            Example("""
             func foo<T>(param1: T, param2: String, param3: String) -> T { /* some code */ }
-            """
+            """),
+            Example("""
+                func foo(a: [Int] = [
+                    1
+                ])
+            """)
         ],
         triggeringExamples: [
-            """
+            Example("""
             func foo(↓param1: String, param2: String,
                      param3: String
             )
-            """,
-            """
+            """),
+            Example("""
             func foo(
                 param1: String,
                 param2: String,
                 param3: String↓)
-            """,
-            """
+            """),
+            Example("""
             class SomeType {
                 func foo(↓param1: String, param2: String,
                          param3: String
                 )
             }
-            """,
-            """
+            """),
+            Example("""
             class SomeType {
                 func foo(
                     param1: String,
                     param2: String,
                     param3: String↓)
             }
-            """,
-            """
+            """),
+            Example("""
             func foo<T>(↓param1: T, param2: String,
                      param3: String
             ) -> T
-            """
+            """)
         ]
     )
 
-    public func validate(file: File) -> [StyleViolation] {
-        return violations(in: file.structure.dictionary, file: file)
+    public func validate(file: SwiftLintFile) -> [StyleViolation] {
+        return violations(in: file.structureDictionary, file: file)
     }
 
-    private func violations(in substructure: [String: SourceKitRepresentable], file: File) -> [StyleViolation] {
+    private func violations(in substructure: SourceKittenDictionary, file: SwiftLintFile) -> [StyleViolation] {
         var violations = [StyleViolation]()
 
         // find violations at current level
-        if let kindString = substructure.kind, let kind = SwiftDeclarationKind(rawValue: kindString),
+        if let kind = substructure.declarationKind,
             SwiftDeclarationKind.functionKinds.contains(kind) {
             guard
                 let nameOffset = substructure.nameOffset,
                 let nameLength = substructure.nameLength,
-                let functionName = file.contents.bridge().substringWithByteRange(start: nameOffset, length: nameLength)
+                case let nameByteRange = ByteRange(location: nameOffset, length: nameLength),
+                let functionName = file.stringView.substringWithByteRange(nameByteRange)
             else {
                 return []
             }
 
-            let isMultiline = functionName.contains("\n")
+            let parameters = substructure.substructure.filter { $0.declarationKind == .varParameter }
+            let parameterBodies = parameters.compactMap { $0.content(in: file) }
+            let parametersNewlineCount = parameterBodies.map { body in
+                return body.countOccurrences(of: "\n")
+            }.reduce(0, +)
+            let declarationNewlineCount = functionName.countOccurrences(of: "\n")
+            let isMultiline = declarationNewlineCount > parametersNewlineCount
 
-            let parameters = substructure.substructure.filter { $0.kind == SwiftDeclarationKind.varParameter.rawValue }
             if isMultiline && !parameters.isEmpty {
                 if let openingBracketViolation = openingBracketViolation(parameters: parameters, file: file) {
                     violations.append(openingBracketViolation)
@@ -127,20 +138,16 @@ public struct MultilineParametersBracketsRule: OptInRule, ConfigurationProviderR
         return violations
     }
 
-    private func openingBracketViolation(parameters: [[String: SourceKitRepresentable]],
-                                         file: File) -> StyleViolation? {
+    private func openingBracketViolation(parameters: [SourceKittenDictionary],
+                                         file: SwiftLintFile) -> StyleViolation? {
         guard
-            let firstParamByteOffset = parameters.first?.offset,
-            let firstParamByteLength = parameters.first?.length,
-            let firstParamRange = file.contents.bridge().byteRangeToNSRange(
-                start: firstParamByteOffset,
-                length: firstParamByteLength
-            )
+            let firstParamByteRange = parameters.first?.byteRange,
+            let firstParamRange = file.stringView.byteRangeToNSRange(firstParamByteRange)
         else {
-                return nil
+            return nil
         }
 
-        let prefix = file.contents.bridge().substring(to: firstParamRange.lowerBound)
+        let prefix = file.stringView.nsString.substring(to: firstParamRange.lowerBound)
         let invalidRegex = regex("\\([ \\t]*\\z")
 
         guard let invalidMatch = invalidRegex.firstMatch(in: prefix, options: [], range: prefix.fullNSRange) else {
@@ -148,26 +155,22 @@ public struct MultilineParametersBracketsRule: OptInRule, ConfigurationProviderR
         }
 
         return StyleViolation(
-            ruleDescription: type(of: self).description,
+            ruleDescription: Self.description,
             severity: configuration.severity,
             location: Location(file: file, characterOffset: invalidMatch.range.location + 1)
         )
     }
 
-    private func closingBracketViolation(parameters: [[String: SourceKitRepresentable]],
-                                         file: File) -> StyleViolation? {
+    private func closingBracketViolation(parameters: [SourceKittenDictionary],
+                                         file: SwiftLintFile) -> StyleViolation? {
         guard
-            let lastParamByteOffset = parameters.last?.offset,
-            let lastParamByteLength = parameters.last?.length,
-            let lastParamRange = file.contents.bridge().byteRangeToNSRange(
-                start: lastParamByteOffset,
-                length: lastParamByteLength
-            )
+            let lastParamByteRange = parameters.last?.byteRange,
+            let lastParamRange = file.stringView.byteRangeToNSRange(lastParamByteRange)
         else {
             return nil
         }
 
-        let suffix = file.contents.bridge().substring(from: lastParamRange.upperBound)
+        let suffix = file.stringView.nsString.substring(from: lastParamRange.upperBound)
         let invalidRegex = regex("\\A[ \\t]*\\)")
 
         guard let invalidMatch = invalidRegex.firstMatch(in: suffix, options: [], range: suffix.fullNSRange) else {
@@ -176,7 +179,7 @@ public struct MultilineParametersBracketsRule: OptInRule, ConfigurationProviderR
 
         let characterOffset = lastParamRange.upperBound + invalidMatch.range.upperBound - 1
         return StyleViolation(
-            ruleDescription: type(of: self).description,
+            ruleDescription: Self.description,
             severity: configuration.severity,
             location: Location(file: file, characterOffset: characterOffset)
         )
