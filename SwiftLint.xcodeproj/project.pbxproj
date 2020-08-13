@@ -95,6 +95,8 @@
 		47FF3BE11E7C75B600187E6D /* ImplicitlyUnwrappedOptionalRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47FF3BDF1E7C745100187E6D /* ImplicitlyUnwrappedOptionalRule.swift */; };
 		4968919223BEAC3D00AB8EF9 /* EnumCaseAssociatedValuesLengthRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4968919123BEAC3D00AB8EF9 /* EnumCaseAssociatedValuesLengthRule.swift */; };
 		4A9A3A3A1DC1D75F00DF5183 /* HTMLReporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A9A3A391DC1D75F00DF5183 /* HTMLReporter.swift */; };
+		4D6206C92F410457F2CE9C91 /* Baseline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D6201951C8428A458C9A1D8 /* Baseline.swift */; };
+		4D620924462A3013C44AEFCA /* BaselineViolation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D62097E28B44E4C4C46BB97 /* BaselineViolation.swift */; };
 		4B87881423D1A60C004CE138 /* ShowDocsCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B87881323D1A60C004CE138 /* ShowDocsCommand.swift */; };
 		4DB7815E1CAD72BA00BC4723 /* LegacyCGGeometryFunctionsRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB7815C1CAD690100BC4723 /* LegacyCGGeometryFunctionsRule.swift */; };
 		4DCB8E7F1CBE494E0070FCF0 /* RegexHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DCB8E7D1CBE43640070FCF0 /* RegexHelpers.swift */; };
@@ -214,6 +216,7 @@
 		92CCB2D71E1EEFA300C8E5A3 /* UnusedOptionalBindingRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92CCB2D61E1EEFA300C8E5A3 /* UnusedOptionalBindingRule.swift */; };
 		93E0C3CE1D67BD7F007FA25D /* ConditionalReturnsOnNewlineRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93E0C3CD1D67BD7F007FA25D /* ConditionalReturnsOnNewlineRule.swift */; };
 		A1A6F3F21EE319ED00A9F9E2 /* ObjectLiteralConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A6F3F11EE319ED00A9F9E2 /* ObjectLiteralConfiguration.swift */; };
+		A274DB3121F8600300F1A581 /* BaselineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A274DB3021F8600300F1A581 /* BaselineTests.swift */; };
 		A3184D56215BCEFF00621EA2 /* LegacyRandomRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3184D55215BCEFF00621EA2 /* LegacyRandomRule.swift */; };
 		A73469421FB121BA009B57C7 /* CallPairRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A73469401FB12149009B57C7 /* CallPairRule.swift */; };
 		B0270FAE242E486D00A43E8B /* GitLabJUnitReporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0270FAD242E486D00A43E8B /* GitLabJUnitReporter.swift */; };
@@ -617,6 +620,8 @@
 		47FF3BDF1E7C745100187E6D /* ImplicitlyUnwrappedOptionalRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImplicitlyUnwrappedOptionalRule.swift; sourceTree = "<group>"; };
 		4968919123BEAC3D00AB8EF9 /* EnumCaseAssociatedValuesLengthRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EnumCaseAssociatedValuesLengthRule.swift; sourceTree = "<group>"; };
 		4A9A3A391DC1D75F00DF5183 /* HTMLReporter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HTMLReporter.swift; sourceTree = "<group>"; };
+		4D6201951C8428A458C9A1D8 /* Baseline.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Baseline.swift; sourceTree = "<group>"; };
+		4D62097E28B44E4C4C46BB97 /* BaselineViolation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BaselineViolation.swift; sourceTree = "<group>"; };
 		4B87881323D1A60C004CE138 /* ShowDocsCommand.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ShowDocsCommand.swift; sourceTree = "<group>"; };
 		4DB7815C1CAD690100BC4723 /* LegacyCGGeometryFunctionsRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LegacyCGGeometryFunctionsRule.swift; sourceTree = "<group>"; };
 		4DCB8E7D1CBE43640070FCF0 /* RegexHelpers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RegexHelpers.swift; sourceTree = "<group>"; };
@@ -737,6 +742,7 @@
 		92CCB2D61E1EEFA300C8E5A3 /* UnusedOptionalBindingRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UnusedOptionalBindingRule.swift; sourceTree = "<group>"; };
 		93E0C3CD1D67BD7F007FA25D /* ConditionalReturnsOnNewlineRule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConditionalReturnsOnNewlineRule.swift; sourceTree = "<group>"; };
 		A1A6F3F11EE319ED00A9F9E2 /* ObjectLiteralConfiguration.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ObjectLiteralConfiguration.swift; sourceTree = "<group>"; };
+		A274DB3021F8600300F1A581 /* BaselineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaselineTests.swift; sourceTree = "<group>"; };
 		A3184D55215BCEFF00621EA2 /* LegacyRandomRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyRandomRule.swift; sourceTree = "<group>"; };
 		A73469401FB12149009B57C7 /* CallPairRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallPairRule.swift; sourceTree = "<group>"; };
 		B0270FAD242E486D00A43E8B /* GitLabJUnitReporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitLabJUnitReporter.swift; sourceTree = "<group>"; };
@@ -1134,6 +1140,15 @@
 				006204DA1E1E48F900FFFBE1 /* VerticalWhitespaceConfiguration.swift */,
 			);
 			path = RuleConfigurations;
+			sourceTree = "<group>";
+		};
+		4D620840CFD78DE0E6ABFC65 /* Baseline */ = {
+			isa = PBXGroup;
+			children = (
+				4D6201951C8428A458C9A1D8 /* Baseline.swift */,
+				4D62097E28B44E4C4C46BB97 /* BaselineViolation.swift */,
+			);
+			path = Baseline;
 			sourceTree = "<group>";
 		};
 		4DCB8E7C1CBE43530070FCF0 /* Helpers */ = {
@@ -1542,6 +1557,7 @@
 				E86396C31BADAC0D002C9E88 /* Reporters */,
 				E88DEA7A1B098D7300A66CB0 /* Rules */,
 				D0D1216F19E87B05005E4BAA /* Supporting Files */,
+				4D620840CFD78DE0E6ABFC65 /* Baseline */,
 			);
 			name = SwiftLintFramework;
 			path = Source/SwiftLintFramework;
@@ -1568,6 +1584,7 @@
 				D49D9F0E24DBAB8600FC0B8F /* AccessControlLevelTests.swift */,
 				D4998DE61DF191380006E05D /* AttributesRuleTests.swift */,
 				D4EAB3A320E9948D0051C09A /* AutomaticRuleTests.generated.swift */,
+				A274DB3021F8600300F1A581 /* BaselineTests.swift */,
 				260F669F225C5B6D00407CF5 /* CollectingRuleTests.swift */,
 				7578C915214173BE0080FEC9 /* CollectionAlignmentRuleTests.swift */,
 				D43B04651E071ED3004016AF /* ColonRuleTests.swift */,
@@ -2413,6 +2430,8 @@
 				D47079AF1DFE520000027086 /* VoidReturnRule.swift in Sources */,
 				B3935EE74B1E8E14FBD65E7F /* String+XML.swift in Sources */,
 				BC87573B2195CF2A00CA7A74 /* ModifierOrderRuleExamples.swift in Sources */,
+				4D6206C92F410457F2CE9C91 /* Baseline.swift in Sources */,
+				4D620924462A3013C44AEFCA /* BaselineViolation.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2490,6 +2509,7 @@
 				C25EBBDF2107884200E27603 /* PrefixedTopLevelConstantRuleTests.swift in Sources */,
 				C2B3C1612106F78C00088928 /* ConfigurationAliasesTests.swift in Sources */,
 				D4470D5B1EB76F44008A1B2E /* UnusedOptionalBindingRuleTests.swift in Sources */,
+				A274DB3121F8600300F1A581 /* BaselineTests.swift in Sources */,
 				787CDE3B208F9C34005F3D2F /* SwitchCaseAlignmentRuleTests.swift in Sources */,
 				B1FD3ABD238BC5FB00CE121E /* ImplicitReturnRuleTests.swift in Sources */,
 				F480DC811F2609AB00099465 /* XCTestCase+BundlePath.swift in Sources */,

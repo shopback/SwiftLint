@@ -1032,7 +1032,8 @@ This is the last release to support building with Swift 4.2.x.
 
 #### Experimental
 
-* None.
+* Add baseline mechanism to allow to save a list of violations, and then use the list as a baseline to ignore old issues and only report new ones
+[polszacki-tooploox](https://github.com/polszacki-tooploox)
 
 #### Enhancements
 
