@@ -220,6 +220,8 @@ extension ConfigurationTests {
         ("testOnlyRulesMerging", testOnlyRulesMerging),
         ("testCustomRulesMerging", testCustomRulesMerging),
         ("testMergingAllowsDisablingParentsCustomRules", testMergingAllowsDisablingParentsCustomRules),
+        ("testCustomRulesMergingWithOnlyRules", testCustomRulesMergingWithOnlyRules),
+        ("testCustomRulesReconfiguration", testCustomRulesReconfiguration),
         ("testLevel0", testLevel0),
         ("testLevel1", testLevel1),
         ("testLevel2", testLevel2),
@@ -1343,6 +1345,12 @@ extension RequiredEnumCaseRuleTestCase {
     ]
 }
 
+extension RequiredXCTestTearDownRuleTests {
+    static var allTests: [(String, (RequiredXCTestTearDownRuleTests) -> () throws -> Void)] = [
+        ("testWithDefaultConfiguration", testWithDefaultConfiguration)
+    ]
+}
+
 extension ReturnArrowWhitespaceRuleTests {
     static var allTests: [(String, (ReturnArrowWhitespaceRuleTests) -> () throws -> Void)] = [
         ("testWithDefaultConfiguration", testWithDefaultConfiguration)
@@ -1932,6 +1940,7 @@ XCTMain([
     testCase(ReporterTests.allTests),
     testCase(RequiredDeinitRuleTests.allTests),
     testCase(RequiredEnumCaseRuleTestCase.allTests),
+    testCase(RequiredXCTestTearDownRuleTests.allTests),
     testCase(ReturnArrowWhitespaceRuleTests.allTests),
     testCase(RuleConfigurationTests.allTests),
     testCase(RuleTests.allTests),

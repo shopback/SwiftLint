@@ -21,7 +21,10 @@
 
 #### Enhancements
 
-* None.
+* Adds `required_xctest_tearddown` opt-in rule to enforce `tearDown` when 
+  `setUp` is implemented in a test class.  
+  [Otavio Cordeiro](https://github.com/otaviocc)
+  [#3452](https://github.com/realm/SwiftLint/issues/3452)
 
 #### Bug Fixes
 
