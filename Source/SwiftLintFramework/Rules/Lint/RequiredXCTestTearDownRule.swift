@@ -4,7 +4,7 @@ public struct RequiredXCTestTearDownRule: Rule, OptInRule, ConfigurationProvider
     public var configuration = SeverityConfiguration(.warning)
 
     public static let description = RuleDescription(
-        identifier: "required_xctest_tearddown",
+        identifier: "required_xctest_teardown",
         name: "Required XCTest Tear Down",
         description: "Test classes must implement tearDown when setUp is provided.",
         kind: .lint,
