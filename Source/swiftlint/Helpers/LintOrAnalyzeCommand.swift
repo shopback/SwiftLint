@@ -39,7 +39,8 @@ struct LintOrAnalyzeCommand {
         let cache = options.ignoreCache ? nil : LinterCache(configuration: configuration)
         let visitorMutationQueue = DispatchQueue(label: "io.realm.swiftlint.lintVisitorMutation")
         let rootPath = options.paths.first?.absolutePathStandardized() ?? ""
-        let baseline = Baseline(baselinePath: rootPath)
+        let absolutePath = String(format: "%@/.swiftlint_baseline", rootPath)
+        let baseline = Baseline(baselinePath: absolutePath)
         if options.useBaseline {
             baseline.readBaseline()
         }
