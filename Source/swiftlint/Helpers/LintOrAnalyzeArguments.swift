@@ -32,6 +32,8 @@ struct LintOrAnalyzeArguments: ParsableArguments {
     var benchmark = false
     @Option(help: "The reporter used to log errors and warnings.")
     var reporter: String?
+    @Option(help: "Save a list of violations if there is no baseline file, and then use the list as a baseline to ignore old issues and only report new ones.")
+    var useBaseline = false
 }
 
 // MARK: - Common Argument Help
